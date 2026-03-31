@@ -5536,6 +5536,858 @@ body.page-login .showcase-figure {
   max-width: 250px;
   height: auto;
   display: block;
+}
+
+/* ========================================
+   COMPREHENSIVE MOBILE RESPONSIVE STYLES
+   ======================================== */
+
+/* MOBILE NAVIGATION HAMBURGER MENU */
+.nav-hamburger {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.nav-hamburger:hover {
+  background: rgba(255, 255, 255, 0.6);
+  transform: scale(1.05);
+}
+
+.nav-hamburger span {
+  width: 22px;
+  height: 2px;
+  background: #6b0f0f;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.nav-hamburger.active span:nth-child(1) {
+  transform: rotate(45deg) translateY(9px);
+}
+
+.nav-hamburger.active span:nth-child(2) {
+  opacity: 0;
+}
+
+.nav-hamburger.active span:nth-child(3) {
+  transform: rotate(-45deg) translateY(-9px);
+}
+
+/* MOBILE MENU DRAWER */
+.nav-mobile-menu {
+  position: fixed;
+  top: 72px;
+  left: 0;
+  right: 0;
+  background: white;
+  max-height: calc(100vh - 72px);
+  overflow-y: auto;
+  transform: translateY(-100%);
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 999;
+  display: none;
+  flex-direction: column;
+}
+
+.nav-mobile-menu.is-open {
+  display: flex;
+  transform: translateY(0);
+  opacity: 1;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.nav-mobile-item {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  text-decoration: none;
+  color: #333;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.nav-mobile-item:hover {
+  background: #f8f8f8;
+}
+
+.nav-mobile-item.active {
+  background: #ffd000;
+  color: #1a1512;
+  font-weight: 700;
+}
+
+/* TABLETS & MEDIUM SCREENS (768px and below) */
+@media (max-width: 768px) {
+  .nav-inner {
+    padding: 0.5rem 1rem;
+  }
+
+  .nav-links {
+    display: none;
+  }
+
+  .nav-hamburger {
+    display: flex;
+  }
+
+  .nav-right {
+    gap: 0.4rem;
+  }
+
+  .notif-btn,
+  .nav-dots-trigger {
+    width: 40px;
+    height: 40px;
+  }
+
+  .main-container {
+    grid-template-columns: 1fr;
+    padding: 5rem 1rem 1.5rem;
+    gap: 1rem;
+  }
+
+  .carousel-section {
+    height: 60vh;
+    min-height: 300px;
+  }
+
+  .container {
+    max-width: 100%;
+    padding: 1rem 0.75rem;
+  }
+
+  .map-section {
+    padding: 3rem 1rem;
+  }
+
+  .map-content-wrapper {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .municipalities-panel {
+    width: 100%;
+    max-height: 240px;
+    border-left: none;
+    border-top: 1px solid #ccc;
+  }
+
+  .records-section {
+    padding: 2rem 1rem;
+  }
+
+  .records-table-header-controls {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .records-table-header,
+  .records-table-row {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    padding: 1rem;
+  }
+
+  .records-table-header {
+    display: none;
+  }
+
+  .records-table-row {
+    display: block;
+    border: 1px solid #e0e0e0;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+  }
+
+  .records-table-row span {
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+
+  .records-table-row span::before {
+    content: attr(data-label);
+    font-weight: 700;
+    color: #555;
+    font-size: 0.8rem;
+  }
+
+  .analytics-section {
+    padding: 2rem 1rem;
+  }
+
+  .analytics-charts {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-bottom {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-content {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .footer-bottom {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .back-to-top {
+    right: 1rem;
+    bottom: 1rem;
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* PHONES & SMALL SCREENS (640px and below) */
+@media (max-width: 640px) {
+  .nav-logo-title {
+    font-size: 1rem;
+  }
+
+  .nav-logo-sub {
+    font-size: 0.5rem;
+  }
+
+  .carousel-section {
+    height: 50vh;
+    min-height: 250px;
+  }
+
+  .brand-title {
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+  }
+
+  .container {
+    padding: 0.75rem 0.5rem;
+    gap: 0.75rem;
+  }
+
+  .auth-card {
+    max-width: 100%;
+    padding: 1.25rem 1rem;
+  }
+
+  .auth-tabs {
+    flex-direction: row;
+  }
+
+  .tab {
+    padding: 0.6rem 0.9rem;
+    font-size: 0.85rem;
+  }
+
+  .input-wrap input,
+  .input-wrap select {
+    padding: 0.9rem 0.75rem;
+    font-size: 16px;
+  }
+
+  .btn {
+    padding: 0.9rem 1.25rem;
+    font-size: 0.95rem;
+  }
+
+  .records-filter-input,
+  .records-status-filter,
+  .date-input {
+    font-size: 14px;
+    min-width: 0;
+  }
+
+  .records-export-btn {
+    width: 100%;
+  }
+
+  .records-table-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .search-box {
+    max-width: 100%;
+  }
+
+  .municipalities-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .team-card {
+    padding: 1.25rem;
+  }
+
+  .teams-dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .analytics-stats {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .analytics-stat-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .analytics-stat-icon {
+    width: 50px;
+    height: 50px;
+  }
+
+  .modal-content {
+    width: 95%;
+    padding: 1.5rem 1.25rem;
+    margin: 20% auto;
+  }
+}
+
+/* EXTRA SMALL PHONES (480px and below) */
+@media (max-width: 480px) {
+  :root {
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  body {
+    font-size: 14px;
+  }
+
+  .main-container {
+    padding: 4.5rem 0.75rem 1rem;
+  }
+
+  .carousel-section {
+    height: 45vh;
+    min-height: 200px;
+  }
+
+  .carousel-tag {
+    font-size: 1.5rem;
+  }
+
+  .carousel-cta {
+    padding: 0.6rem 1.25rem;
+    font-size: 0.85rem;
+  }
+
+  .carousel-dots {
+    bottom: 0.75rem;
+    gap: 0.4rem;
+  }
+
+  .carousel-dot {
+    width: 8px;
+    height: 8px;
+  }
+
+  .brand-title {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+  }
+
+  .brand-tag {
+    font-size: 0.65rem;
+  }
+
+  .brand-text {
+    font-size: 0.95rem;
+  }
+
+  .coasters {
+    gap: 0.75rem;
+  }
+
+  .coaster {
+    width: 60px;
+    height: 60px;
+  }
+
+  .container {
+    gap: 0.5rem;
+  }
+
+  .auth-card {
+    padding: 1rem 0.75rem;
+  }
+
+  .auth-tabs {
+    margin-bottom: 1.25rem;
+  }
+
+  .tab {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .input-wrap input,
+  .input-wrap select {
+    padding: 0.85rem 0.65rem;
+    font-size: 16px;
+    border-radius: 8px;
+  }
+
+  .input-wrap label {
+    font-size: 0.9rem;
+  }
+
+  .form {
+    gap: 1rem;
+  }
+
+  .input-wrap {
+    margin-bottom: 1rem;
+  }
+
+  .btn {
+    padding: 0.85rem 1.15rem;
+    font-size: 0.9rem;
+    border-radius: 8px;
+  }
+
+  .nav-inner {
+    padding: 0.4rem 0.75rem;
+  }
+
+  .map-title {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+  }
+
+  .map-subtitle {
+    font-size: 0.95rem;
+  }
+
+  .municipalities-panel {
+    padding: 1rem 1rem;
+    max-height: 200px;
+  }
+
+  .municipalities-panel-title {
+    font-size: 0.9rem;
+  }
+
+  .municipality-card {
+    padding: 1rem;
+  }
+
+  .municipality-card h3 {
+    font-size: 1rem;
+  }
+
+  .records-section {
+    padding: 1.5rem 0.75rem;
+  }
+
+  .records-container {
+    padding: 0;
+  }
+
+  .records-title {
+    font-size: clamp(1.3rem, 3vw, 1.75rem);
+  }
+
+  .records-header {
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
+  }
+
+  .records-table-wrap {
+    border-radius: 8px;
+  }
+
+  .records-table-container {
+    padding: 0;
+    max-height: 65vh;
+  }
+
+  .records-table-row {
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    border-radius: 6px;
+  }
+
+  .records-status {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.75rem;
+  }
+
+  .records-filter-input,
+  .records-status-filter,
+  .date-input {
+    height: 40px;
+    font-size: 14px;
+    padding: 0.5rem 0.65rem;
+  }
+
+  .records-export-btn {
+    height: 40px;
+    font-size: 0.8rem;
+    padding: 0.5rem 1rem;
+  }
+
+  .search-box {
+    margin-bottom: 0.5rem;
+  }
+
+  .analytics-section {
+    padding: 1.5rem 0.75rem;
+  }
+
+  .analytics-title {
+    font-size: clamp(1.3rem, 3vw, 1.75rem);
+  }
+
+  .analytics-chart-card {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+
+  .analytics-chart-card .records-table-title {
+    font-size: 1rem;
+  }
+
+  .analytics-stat-card {
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+
+  .analytics-stat-icon {
+    width: 45px;
+    height: 45px;
+    font-size: 1.5rem;
+  }
+
+  .analytics-stat-value {
+    font-size: 1.25rem;
+  }
+
+  .municipalities-grid {
+    padding: 1.5rem 0.75rem;
+    grid-template-columns: 1fr;
+  }
+
+  .grid {
+    gap: 0.75rem;
+  }
+
+  .municipality-card {
+    padding: 0.85rem;
+  }
+
+  .team-card {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+
+  .team-card-title {
+    font-size: 1.1rem;
+  }
+
+  .team-badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.6rem;
+  }
+
+  .team-btn {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  .modal-content {
+    width: 96%;
+    padding: 1.25rem 1rem;
+    margin: 30% auto;
+    border-radius: 12px;
+  }
+
+  .modal-content h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .close-modal {
+    font-size: 1.75rem;
+    right: 1rem;
+    top: 0.75rem;
+  }
+
+  .footer-content {
+    gap: 1.5rem;
+  }
+
+  .footer-logo-title {
+    font-size: 1.25rem;
+  }
+
+  .footer-links h4,
+  .footer-contact h4 {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .footer-links a,
+  .footer-contact-item {
+    font-size: 0.85rem;
+  }
+
+  .back-to-top {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+}
+
+/* VERY SMALL PHONES (380px and below) */
+@media (max-width: 380px) {
+  .nav-inner {
+    padding: 0.35rem 0.5rem;
+  }
+
+  .nav-logo-icon {
+    width: 35px;
+    height: 30px;
+  }
+
+  .nav-logo-title {
+    font-size: 0.9rem;
+  }
+
+  .nav-logo-sub {
+    display: none;
+  }
+
+  .main-container {
+    padding: 4.25rem 0.5rem 0.75rem;
+  }
+
+  .carousel-section {
+    height: 40vh;
+  }
+
+  .brand-tag {
+    display: none;
+  }
+
+  .brand-title {
+    font-size: 1.5rem;
+  }
+
+  .brand-text {
+    font-size: 0.9rem;
+    max-width: 100%;
+  }
+
+  .coasters {
+    display: none;
+  }
+
+  .container {
+    max-width: 100%;
+    padding: 0.5rem;
+    gap: 0.4rem;
+  }
+
+  .auth-card {
+    padding: 0.9rem 0.65rem;
+  }
+
+  .input-wrap {
+    margin-bottom: 0.85rem;
+  }
+
+  .input-wrap input,
+  .input-wrap select {
+    padding: 0.8rem 0.6rem;
+    font-size: 16px;
+    border-radius: 6px;
+  }
+
+  .input-wrap label {
+    font-size: 0.85rem;
+    left: 0.75rem;
+  }
+
+  .btn {
+    padding: 0.8rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .records-title {
+    font-size: 1.25rem;
+  }
+
+  .records-filter-input,
+  .records-status-filter {
+    height: 38px;
+    font-size: 13px;
+  }
+
+  .records-table-row {
+    padding: 0.65rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .records-status {
+    font-size: 0.7rem;
+  }
+
+  .analytics-title {
+    font-size: 1.25rem;
+  }
+
+  .analytics-chart-card {
+    padding: 0.85rem;
+  }
+
+  .municipalities-grid {
+    padding: 1.25rem 0.5rem;
+  }
+
+  .municipal-card {
+    padding: 0.75rem;
+  }
+
+  .team-card {
+    padding: 0.85rem;
+  }
+
+  .team-card-title {
+    font-size: 1rem;
+  }
+
+  .modal-content {
+    width: 97%;
+    padding: 1rem 0.85rem;
+    margin: 40% auto;
+  }
+
+  .modal-content h2 {
+    font-size: 1.35rem;
+  }
+
+  .footer-content {
+    gap: 1rem;
+  }
+
+  .footer-logo {
+    justify-content: center;
+  }
+
+  .page-login .login-shell {
+    grid-template-columns: 1fr;
+    padding: 1rem 0.75rem;
+  }
+
+  .page-login .login-icon-wrap {
+    order: 1;
+    margin-bottom: 0.5rem;
+  }
+
+  .page-login .login-copy {
+    order: 2;
+  }
+
+  .page-login .showcase-figure {
+    width: clamp(120px, 28vw, 160px);
+  }
+
+  .page-login #signup-form.active {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* TOUCH DEVICE OPTIMIZATIONS */
+@media (hover: none) and (pointer: coarse) {
+  /* Remove hover effects on touch devices */
+  .nav-btn:hover,
+  .records-table-row:hover,
+  .municipality-card:hover,
+  .team-card:hover,
+  .analytics-stat-card:hover,
+  .analytics-chart-card:hover {
+    transform: none;
+  }
+
+  /* Ensure touch targets are 44px minimum */
+  button,
+  a,
+  input[type="button"],
+  input[type="submit"],
+  .nav-btn,
+  .team-btn,
+  .records-export-btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Add touch-friendly tap indicators */
+  input,
+  select,
+  textarea,
+  button {
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+  }
+
+  /* Prevent zoom on input focus on iOS */
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  /* Disable double-tap zoom on buttons */
+  button,
+  a {
+    touch-action: manipulation;
+  }
+}
+
+/* PREVENT LAYOUT SHIFT & OPTIMIZE PERFORMANCE */
+html {
+  scroll-behavior: smooth;
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* SAFE AREA SUPPORT FOR NOTCHED DEVICES */
+@supports (padding: max(0px)) {
+  .nav-inner {
+    padding-left: max(0.5rem, env(safe-area-inset-left));
+    padding-right: max(0.5rem, env(safe-area-inset-right));
+  }
+
+  .main-container {
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
+  }
+
+  .map-section,
+  .records-section,
+  .analytics-section {
+    padding-top: max(1rem, env(safe-area-inset-top));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
   margin: 0;
 }
 
