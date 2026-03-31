@@ -277,12 +277,173 @@
       cursor: pointer;
       font-size: 0.84rem;
     }
-    @media (max-width: 720px) {
+    /* TABLET & MEDIUM SCREENS (768px and below) */
+    @media (max-width: 768px) {
+      .team-mission-card {
+        padding: 1rem;
+      }
       .team-mission-header {
         flex-direction: column;
+        gap: 0.75rem;
       }
       .team-mission-status {
         align-self: flex-start;
+      }
+      .team-mission-grid {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 0.65rem;
+      }
+      .team-mission-meta {
+        padding: 0.75rem 0.85rem;
+        font-size: 0.9rem;
+      }
+      .team-mission-assignment select {
+        min-width: 150px;
+      }
+    }
+
+    /* MOBILE PHONES (640px and below) */
+    @media (max-width: 640px) {
+      .team-mission-card {
+        padding: 0.9rem;
+        border-radius: 16px;
+      }
+      .team-mission-kicker {
+        font-size: 0.7rem;
+        padding: 0.3rem 0.6rem;
+        margin-bottom: 0.5rem;
+      }
+      .team-mission-title {
+        font-size: 1rem;
+      }
+      .team-mission-status {
+        padding: 0.3rem 0.7rem;
+        font-size: 0.75rem;
+      }
+      .team-mission-grid {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+        margin: 0.75rem 0;
+      }
+      .team-mission-meta {
+        padding: 0.65rem 0.75rem;
+      }
+      .team-mission-meta span {
+        font-size: 0.7rem;
+        margin-bottom: 0.2rem;
+      }
+      .team-mission-meta strong {
+        font-size: 0.85rem;
+      }
+      .team-mission-description {
+        font-size: 0.9rem;
+      }
+      .team-mission-actions {
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+      .team-mission-actions .nav-btn {
+        flex: 1;
+        padding: 0.65rem 1rem;
+        font-size: 0.85rem;
+        min-height: 44px;
+      }
+      .team-mission-assignment {
+        flex-direction: column;
+      }
+      .team-mission-assignment select {
+        width: 100%;
+        min-width: auto;
+      }
+      .team-personnel-checklist {
+        flex: 1 1 100%;
+      }
+      .team-personnel-option {
+        padding: 0.65rem 0.75rem;
+        font-size: 0.9rem;
+      }
+      .personnel-toast-card {
+        min-width: auto;
+        max-width: calc(100vw - 2rem);
+      }
+    }
+
+    /* SMALL PHONES (480px and below) */
+    @media (max-width: 480px) {
+      .team-mission-card {
+        padding: 0.75rem;
+      }
+      .team-mission-header {
+        gap: 0.5rem;
+      }
+      .team-mission-title {
+        font-size: 0.95rem;
+      }
+      .team-mission-grid {
+        gap: 0.4rem;
+      }
+      .team-mission-actions .nav-btn {
+        padding: 0.6rem 0.9rem;
+        font-size: 0.8rem;
+        width: 100%;
+      }
+      .team-personnel-option {
+        padding: 0.65rem 0.75rem;
+      }
+      .team-personnel-option-label {
+        font-size: 0.88rem;
+      }
+      .team-notification-item {
+        padding: 0.75rem 0.85rem;
+      }
+      .team-notification-item strong {
+        font-size: 0.9rem;
+      }
+      .team-notification-item span {
+        font-size: 0.8rem;
+      }
+      .personnel-toast-card {
+        border-radius: 14px;
+        padding: 0.85rem 0.95rem;
+      }
+    }
+
+    /* VERY SMALL PHONES (380px and below) */
+    @media (max-width: 380px) {
+      .team-mission-card {
+        padding: 0.65rem;
+        border-radius: 12px;
+      }
+      .team-mission-title {
+        font-size: 0.9rem;
+      }
+      .team-mission-grid {
+        gap: 0.3rem;
+      }
+      .team-mission-meta {
+        padding: 0.5rem 0.65rem;
+      }
+      .team-mission-actions .nav-btn {
+        padding: 0.55rem 0.8rem;
+        font-size: 0.75rem;
+      }
+    }
+
+    /* TOUCH DEVICE OPTIMIZATIONS */
+    @media (hover: none) and (pointer: coarse) {
+      .team-mission-actions .nav-btn,
+      .nav-btn,
+      .team-mission-assignment select {
+        min-height: 44px;
+        min-width: 44px;
+      }
+      .team-mission-status {
+        min-height: 40px;
+        display: inline-flex;
+        align-items: center;
+      }
+      .team-personnel-option {
+        min-height: 44px;
       }
     }
   </style>
@@ -309,7 +470,7 @@
     </div>
   </nav>
 
-  <main class="user-dashboard-main">
+  <main class="user-dashboard-main" style="overflow-x: hidden;">
     <section class="user-hero">
       <div class="user-hero-copy">
         <p class="user-hero-kicker">Team Dashboard</p>
@@ -472,6 +633,65 @@
       <button type="button" class="personnel-toast-close" id="personnel-task-toast-close">Close</button>
     </div>
   </div>
+
+  <script>
+    // Mobile-first touch enhancements
+    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+      document.documentElement.classList.add('is-touch-device');
+      
+      // Add touch feedback to buttons and form elements
+      const interactiveElements = document.querySelectorAll('.team-mission-actions .nav-btn, select, .team-personnel-option');
+      interactiveElements.forEach(el => {
+        el.addEventListener('touchstart', function() {
+          this.style.opacity = '0.85';
+        });
+        el.addEventListener('touchend', function() {
+          this.style.opacity = '1';
+        });
+      });
+    }
+
+    // Prevent horizontal scrolling on mobile
+    let touchStartX = 0;
+    document.addEventListener('touchstart', function(e) {
+      touchStartX = e.touches[0].clientX;
+    }, false);
+
+    document.addEventListener('touchmove', function(e) {
+      const touchEndX = e.touches[0].clientX;
+      const diff = touchStartX - touchEndX;
+      
+      // Allow vertical scrolling, but prevent horizontal
+      if (Math.abs(diff) > 10) {
+        // Only prevent if it's more horizontal than vertical
+        const touchY = e.touches[0].clientY;
+        if (Math.abs(diff) > Math.abs(touchStartX - touchEndX)) {
+          e.preventDefault();
+        }
+      }
+    }, false);
+
+    // Handle toast notification visibility on mobile
+    const toastContainer = document.querySelector('.personnel-toast');
+    if (toastContainer) {
+      // Adjust toast position on very small screens
+      if (window.innerWidth < 480) {
+        toastContainer.style.right = '0.75rem';
+        toastContainer.style.bottom = '0.75rem';
+      }
+    }
+
+    // Handle select dropdown on mobile - improve focus
+    document.querySelectorAll('select').forEach(select => {
+      select.addEventListener('focus', function() {
+        this.style.outline = 'none';
+        this.style.boxShadow = '0 0 0 3px rgba(66, 153, 225, 0.5)';
+      });
+      select.addEventListener('blur', function() {
+        this.style.boxShadow = 'none';
+      });
+    });
+  </script>
 
   <script src="../js/supabase-config.js"></script>
   <script src="../js/team-dashboard.js"></script>

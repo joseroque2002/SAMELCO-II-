@@ -182,12 +182,145 @@
       cursor: pointer;
       font-size: 0.84rem;
     }
-    @media (max-width: 720px) {
+    /* TABLET & MEDIUM SCREENS (768px and below) */
+    @media (max-width: 768px) {
+      .personnel-task-card {
+        padding: 1rem;
+      }
       .personnel-task-header {
         flex-direction: column;
+        gap: 0.75rem;
       }
       .personnel-task-status {
         align-self: flex-start;
+      }
+      .personnel-task-grid {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 0.65rem;
+      }
+      .personnel-task-meta {
+        padding: 0.75rem 0.85rem;
+        font-size: 0.9rem;
+      }
+    }
+
+    /* MOBILE PHONES (640px and below) */
+    @media (max-width: 640px) {
+      .personnel-task-card {
+        padding: 0.9rem;
+        border-radius: 16px;
+      }
+      .personnel-task-kicker {
+        font-size: 0.7rem;
+        padding: 0.3rem 0.6rem;
+        margin-bottom: 0.5rem;
+      }
+      .personnel-task-title {
+        font-size: 1rem;
+      }
+      .personnel-task-status {
+        padding: 0.3rem 0.7rem;
+        font-size: 0.75rem;
+      }
+      .personnel-task-grid {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+        margin: 0.75rem 0;
+      }
+      .personnel-task-meta {
+        padding: 0.65rem 0.75rem;
+      }
+      .personnel-task-meta span {
+        font-size: 0.7rem;
+        margin-bottom: 0.2rem;
+      }
+      .personnel-task-meta strong {
+        font-size: 0.85rem;
+      }
+      .personnel-task-description {
+        font-size: 0.9rem;
+      }
+      .personnel-task-actions {
+        gap: 0.5rem;
+      }
+      .personnel-done-btn {
+        flex: 1;
+        padding: 0.65rem 1rem;
+        font-size: 0.85rem;
+        min-height: 44px;
+      }
+      .personnel-toast-card {
+        min-width: auto;
+        max-width: calc(100vw - 2rem);
+      }
+    }
+
+    /* SMALL PHONES (480px and below) */
+    @media (max-width: 480px) {
+      .personnel-task-card {
+        padding: 0.75rem;
+      }
+      .personnel-task-header {
+        gap: 0.5rem;
+      }
+      .personnel-task-title {
+        font-size: 0.95rem;
+      }
+      .personnel-task-grid {
+        gap: 0.4rem;
+      }
+      .personnel-done-btn {
+        padding: 0.6rem 0.9rem;
+        font-size: 0.8rem;
+        width: 100%;
+      }
+      .personnel-notification-item {
+        padding: 0.75rem 0.85rem;
+      }
+      .personnel-notification-item strong {
+        font-size: 0.9rem;
+      }
+      .personnel-notification-item span {
+        font-size: 0.8rem;
+      }
+      .personnel-toast-card {
+        border-radius: 14px;
+        padding: 0.85rem 0.95rem;
+      }
+    }
+
+    /* VERY SMALL PHONES (380px and below) */
+    @media (max-width: 380px) {
+      .personnel-task-card {
+        padding: 0.65rem;
+        border-radius: 12px;
+      }
+      .personnel-task-title {
+        font-size: 0.9rem;
+      }
+      .personnel-task-grid {
+        gap: 0.3rem;
+      }
+      .personnel-task-meta {
+        padding: 0.5rem 0.65rem;
+      }
+      .personnel-done-btn {
+        padding: 0.55rem 0.8rem;
+        font-size: 0.75rem;
+      }
+    }
+
+    /* TOUCH DEVICE OPTIMIZATIONS */
+    @media (hover: none) and (pointer: coarse) {
+      .personnel-done-btn,
+      .nav-btn {
+        min-height: 44px;
+        min-width: 44px;
+      }
+      .personnel-task-status {
+        min-height: 40px;
+        display: inline-flex;
+        align-items: center;
       }
     }
   </style>
@@ -214,7 +347,7 @@
     </div>
   </nav>
 
-  <main class="user-dashboard-main">
+  <main class="user-dashboard-main" style="overflow-x: hidden;">
     <section class="user-hero">
       <div class="user-hero-copy">
         <p class="user-hero-kicker">Personnel Dashboard</p>
@@ -336,6 +469,53 @@
       <button type="button" class="personnel-toast-close" id="personnel-assignment-toast-close">Close</button>
     </div>
   </div>
+
+  <script>
+    // Mobile-first touch enhancements
+    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+      document.documentElement.classList.add('is-touch-device');
+      
+      // Add touch feedback to buttons
+      document.querySelectorAll('.personnel-done-btn, .nav-btn').forEach(btn => {
+        btn.addEventListener('touchstart', function() {
+          this.style.opacity = '0.85';
+        });
+        btn.addEventListener('touchend', function() {
+          this.style.opacity = '1';
+        });
+      });
+    }
+
+    // Prevent horizontal scrolling on mobile
+    let touchStartX = 0;
+    document.addEventListener('touchstart', function(e) {
+      touchStartX = e.touches[0].clientX;
+    }, false);
+
+    document.addEventListener('touchmove', function(e) {
+      const touchEndX = e.touches[0].clientX;
+      const diff = touchStartX - touchEndX;
+      
+      // Allow vertical scrolling, but prevent horizontal
+      if (Math.abs(diff) > 10) {
+        // Only prevent if it's more horizontal than vertical
+        const touchY = e.touches[0].clientY;
+        if (Math.abs(diff) > Math.abs(touchStartX - touchEndX)) {
+          e.preventDefault();
+        }
+      }
+    }, false);
+
+    // Handle toast notification visibility on mobile
+    const toastContainer = document.querySelector('.personnel-toast');
+    if (toastContainer) {
+      // Adjust toast position on very small screens
+      if (window.innerWidth < 480) {
+        toastContainer.style.right = '0.75rem';
+        toastContainer.style.bottom = '0.75rem';
+      }
+    }
+  </script>
 
   <script src="../js/supabase-config.js"></script>
   <script src="../js/personnel-dashboard.js"></script>
