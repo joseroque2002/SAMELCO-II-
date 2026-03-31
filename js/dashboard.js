@@ -481,11 +481,12 @@ document.addEventListener('DOMContentLoaded', function () {
     var list = document.getElementById('municipalities-sidebar-list');
     if (!list || !name) return null;
     var opts = options || {};
+    var targetKey = getMunicipalityIndexKey(name || '');
     var items = list.querySelectorAll('.sidebar-municipality-item');
     var matched = null;
     for (var i = 0; i < items.length; i++) {
       var item = items[i];
-      var isMatch = String(item.getAttribute('data-name') || '') === String(name || '');
+      var isMatch = getMunicipalityIndexKey(item.getAttribute('data-name') || '') === targetKey;
       item.classList.toggle('is-active', isMatch);
       var barangayList = item.querySelector('.sidebar-barangays');
       if (barangayList) {
@@ -587,7 +588,7 @@ document.addEventListener('DOMContentLoaded', function () {
           return;
         }
         if (window.map) window.map.setView([m.lat, m.lng], 11);
-        var mk = municipalityMarkersIndex[(m.name || '').toLowerCase()];
+        var mk = municipalityMarkersIndex[getMunicipalityIndexKey(m.name || '')];
         if (mk) mk.openPopup();
       });
       item.setAttribute('data-name', m.name);
@@ -601,16 +602,19 @@ document.addEventListener('DOMContentLoaded', function () {
     zoom: 10,
     minZoom: 8,
     maxZoom: 13,
+    attributionControl: false,
     zoomControl: true,
     scrollWheelZoom: true,
-    maxBounds: [[10.5, 124.0], [12.5, 125.5]]
+    maxBounds: [[10.5, 124.0], [12.5, 125.5]],
+    maxBoundsViscosity: 1.0
   });
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', {
+  /* L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors © CARTO',
     subdomains: 'abcd',
-    maxZoom: 18
-  }).addTo(map);
+    maxZoom: 18,
+    noWrap: true
+  }).addTo(map); */
 
   function createMarkerIcon(pinClasses) {
     var classes = 'marker-pin' + (pinClasses ? (' ' + pinClasses) : '');
@@ -620,6 +624,137 @@ document.addEventListener('DOMContentLoaded', function () {
       iconSize: [30, 42],
       iconAnchor: [15, 42]
     });
+  }
+
+  var SAMAR_MASK_WORLD_RING = [
+    [89.9, -179.9],
+    [89.9, 179.9],
+    [-89.9, 179.9],
+    [-89.9, -179.9]
+  ];
+
+  function toLeafletRing(ring) {
+    if (!Array.isArray(ring) || ring.length < 3) return null;
+    return ring.map(function(coord) {
+      return [coord[1], coord[0]];
+    });
+  }
+
+  function collectSamarMaskHoles(geojson) {
+    var holes = [];
+    if (!geojson || !Array.isArray(geojson.features)) return holes;
+    geojson.features.forEach(function(feature) {
+      var geometry = feature && feature.geometry;
+      if (!geometry || !geometry.coordinates) return;
+
+      if (geometry.type === 'Polygon') {
+        var polygonRing = toLeafletRing(geometry.coordinates[0]);
+        if (polygonRing) holes.push(polygonRing);
+        return;
+      }
+
+      if (geometry.type === 'MultiPolygon') {
+        geometry.coordinates.forEach(function(polygonCoords) {
+          var multiPolygonRing = toLeafletRing(polygonCoords && polygonCoords[0]);
+          if (multiPolygonRing) holes.push(multiPolygonRing);
+        });
+      }
+    });
+    return holes;
+  }
+
+  function addSamarMask(map, geojson) {
+    var holes = collectSamarMaskHoles(geojson);
+    if (!holes.length) return null;
+
+    if (!map.getPane('samarMaskPane')) {
+      map.createPane('samarMaskPane');
+      map.getPane('samarMaskPane').style.zIndex = '350';
+      map.getPane('samarMaskPane').style.pointerEvents = 'none';
+    }
+
+    return L.polygon([SAMAR_MASK_WORLD_RING].concat(holes), {
+      pane: 'samarMaskPane',
+      stroke: false,
+      fillColor: '#ffffff',
+      fillOpacity: 1,
+      fillRule: 'evenodd',
+      interactive: false
+    }).addTo(map);
+  }
+
+  var MUNICIPALITY_COLOR_PALETTE = [
+    '#ef476f', '#ffd166', '#06d6a0', '#118ab2', '#8338ec', '#ff9f1c',
+    '#2ec4b6', '#e76f51', '#8ecae6', '#90be6d', '#f4a261', '#577590',
+    '#ff6b6b', '#4d908e', '#f72585', '#43aa8b', '#b56576', '#fb8500',
+    '#6d597a', '#00b4d8', '#a7c957', '#bc6c25', '#e9c46a', '#4361ee',
+    '#d62828', '#3a86ff'
+  ];
+
+  function buildMunicipalityColorMap(geojson) {
+    var seen = {};
+    var municipalityNames = [];
+    var colorMap = {};
+
+    if (!geojson || !Array.isArray(geojson.features)) return colorMap;
+
+    geojson.features.forEach(function(feature) {
+      var municipalityName = feature && feature.properties && feature.properties.NAME_2;
+      if (!municipalityName || seen[municipalityName]) return;
+      seen[municipalityName] = true;
+      municipalityNames.push(municipalityName);
+    });
+
+    municipalityNames.sort();
+    municipalityNames.forEach(function(name, index) {
+      colorMap[name] = MUNICIPALITY_COLOR_PALETTE[index % MUNICIPALITY_COLOR_PALETTE.length];
+    });
+
+    return colorMap;
+  }
+
+  function shadeHexColor(hex, amount) {
+    if (!hex || hex.charAt(0) !== '#') return hex || '#8b2a2a';
+    var normalized = hex.length === 4
+      ? '#' + hex.charAt(1) + hex.charAt(1) + hex.charAt(2) + hex.charAt(2) + hex.charAt(3) + hex.charAt(3)
+      : hex;
+    var r = Math.max(0, Math.min(255, parseInt(normalized.slice(1, 3), 16) + amount));
+    var g = Math.max(0, Math.min(255, parseInt(normalized.slice(3, 5), 16) + amount));
+    var b = Math.max(0, Math.min(255, parseInt(normalized.slice(5, 7), 16) + amount));
+    return '#' + [r, g, b].map(function(channel) {
+      var value = channel.toString(16);
+      return value.length === 1 ? '0' + value : value;
+    }).join('');
+  }
+
+  var municipalityColorMap = buildMunicipalityColorMap(window.SAMELCO_COVERAGE_GEOJSON);
+
+  function getMunicipalityFillColor(name) {
+    return municipalityColorMap[name] || '#d4a373';
+  }
+
+  function getCoverageFeatureStyle(feature) {
+    var municipalityName = feature && feature.properties ? feature.properties.NAME_2 : '';
+    var fillColor = getMunicipalityFillColor(municipalityName);
+    return {
+      color: shadeHexColor(fillColor, -140),
+      weight: 1.35,
+      opacity: 0.9,
+      fillColor: fillColor,
+      fillOpacity: 0.42
+    };
+  }
+
+  function getCoverageFeatureHoverStyle(feature) {
+    var municipalityName = feature && feature.properties ? feature.properties.NAME_2 : '';
+    var fillColor = getMunicipalityFillColor(municipalityName);
+    return {
+      color: shadeHexColor(fillColor, -180),
+      weight: 2.1,
+      opacity: 1,
+      fillColor: fillColor,
+      fillOpacity: 0.6
+    };
   }
 
   function fitMapToServiceArea() {
@@ -637,25 +772,68 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  function focusMapOnSamar(bounds) {
+    if (!bounds || !bounds.isValid()) {
+      fitMapToServiceArea();
+      return;
+    }
+    var lockedBounds = bounds.pad(0.03);
+    map.setMaxBounds(lockedBounds);
+    map.fitBounds(lockedBounds, { padding: [12, 12] });
+  }
+
   var customIcon = createMarkerIcon('');
   var newIcon = createMarkerIcon('marker-pin-new');
   var pendingIcon = createMarkerIcon('marker-pin-pending');
   var restoredIcon = createMarkerIcon('marker-pin-restored');
 
-  fitMapToServiceArea();
+  // --- Map Labels ---
+  var municipalityLabelLayer = L.layerGroup();
+  var barangayLabelLayer = L.layerGroup();
+
+  function updateMapLabels() {
+    var zoom = map.getZoom();
+    
+    // Toggle Municipality Labels (Visible at zoom 10 and above)
+    if (zoom >= 10) {
+      if (!map.hasLayer(municipalityLabelLayer)) municipalityLabelLayer.addTo(map);
+    } else {
+      if (map.hasLayer(municipalityLabelLayer)) map.removeLayer(municipalityLabelLayer);
+    }
+
+    // Toggle Barangay Labels (Visible at zoom 12 and above)
+    if (zoom >= 12) {
+      if (!map.hasLayer(barangayLabelLayer)) barangayLabelLayer.addTo(map);
+    } else {
+      if (map.hasLayer(barangayLabelLayer)) map.removeLayer(barangayLabelLayer);
+    }
+  }
+
+  function initMunicipalityLabels() {
+    if (!window.SAMELCO_MUNICIPALITIES) return;
+    window.SAMELCO_MUNICIPALITIES.forEach(function(m) {
+      if (!m.lat || !m.lng) return;
+      L.marker([m.lat, m.lng], {
+        icon: L.divIcon({
+          className: 'map-label municipality-label',
+          html: '<span>' + m.name + '</span>',
+          iconSize: [160, 24],
+          iconAnchor: [80, 12]
+        }),
+        interactive: false,
+        pane: 'markerPane'
+      }).addTo(municipalityLabelLayer);
+    });
+  }
+
+  map.on('zoomend', updateMapLabels);
+  initMunicipalityLabels();
 
   // Render Coverage GeoJSON if available
+  var coverageLayer = null;
   if (window.SAMELCO_COVERAGE_GEOJSON) {
-    L.geoJSON(window.SAMELCO_COVERAGE_GEOJSON, {
-      style: function(feature) {
-        return {
-          color: '#8b2a2a',
-          weight: 1.5,
-          opacity: 0.6,
-          fillColor: '#8b2a2a',
-          fillOpacity: 0.05
-        };
-      },
+    coverageLayer = L.geoJSON(window.SAMELCO_COVERAGE_GEOJSON, {
+      style: getCoverageFeatureStyle,
       onEachFeature: function(feature, layer) {
         if (feature.properties) {
           var props = feature.properties;
@@ -670,25 +848,44 @@ document.addEventListener('DOMContentLoaded', function () {
           layer.on({
             mouseover: function(e) {
               var l = e.target;
-              l.setStyle({
-                weight: 3,
-                opacity: 1,
-                fillOpacity: 0.2
-              });
+              l.setStyle(getCoverageFeatureHoverStyle(feature));
             },
             mouseout: function(e) {
               var l = e.target;
-              l.setStyle({
-                weight: 1.5,
-                opacity: 0.6,
-                fillOpacity: 0.05
-              });
+              l.setStyle(getCoverageFeatureStyle(feature));
             }
           });
+
+          // Add barangay label to the barangayLabelLayer
+          if (props.NAME_3) {
+            var bounds = layer.getBounds();
+            if (bounds.isValid()) {
+              var center = bounds.getCenter();
+              L.marker(center, {
+                icon: L.divIcon({
+                  className: 'map-label barangay-label',
+                  html: '<span>' + props.NAME_3 + '</span>',
+                  iconSize: [120, 18],
+                  iconAnchor: [60, 9]
+                }),
+                interactive: false,
+                pane: 'markerPane'
+              }).addTo(barangayLabelLayer);
+            }
+          }
         }
       }
-    }).addTo(map);
+    });
+
+    addSamarMask(map, window.SAMELCO_COVERAGE_GEOJSON);
+    coverageLayer.addTo(map);
+    focusMapOnSamar(coverageLayer.getBounds());
+  } else {
+    fitMapToServiceArea();
   }
+
+  // Initial update of labels
+  updateMapLabels();
 
   var municipalityMarkersLayer = L.layerGroup().addTo(map);
   var reportMarkersLayer = L.layerGroup().addTo(map);
@@ -1350,7 +1547,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
   function isNewComplianceRow(r) {
-    if (!r || isResolvedRow(r)) return false;
+    if (!r || isResolvedRow(r) || isOnTheWayRow(r)) return false;
     return !getAssignedTeamForRow(r);
   }
   function isUrgentRow(r) {
@@ -1430,192 +1627,19 @@ document.addEventListener('DOMContentLoaded', function () {
     return !!getAssignedTeamForRow(r);
   }
 
+  /** When true, sidebar lists only municipalities/barangays with New compliance or On the way (incl. assigned team). */
+  function isActiveReportsSidebarFilter() {
+    var el = document.getElementById('issues-only-toggle');
+    if (!el) return true;
+    return !!el.checked;
+  }
+
   function renderMunicipalityMarkers(locations) {
     refreshNewestUnresolvedFlag(locations);
-    var readSet = buildIdSet(getReadNotifIds());
     municipalityMarkersLayer.clearLayers();
     municipalityMarkersIndex = {};
-    return;
-    municipalities.forEach(function(m) {
-      var muniReports = locations.filter(function(p) { return p.name === m.name; });
-      var visibleReports = muniReports.filter(function(r) {
-        var b = resolveBarangayForReport(r) || r.barangay || '';
-        if (isPinHidden(m.name, b, r.id)) return false;
-        if (!isDbPendingRow(r) && !isResolvedRow(r) && isBarangayRestored(m.name, b)) return false;
-        return true;
-      });
-      var relevantReports = visibleReports.filter(function(r){ return isSidebarIssueRow(r); });
-      var hasProblem = relevantReports.length > 0;
-      if (!hasProblem) return;
-      var hasNewCompliance = relevantReports.some(function(r){ return isNewComplianceRow(r); });
-      var isRestored = false;
-      var icon;
-      icon = hasNewCompliance ? newIcon : pendingIcon;
-      var marker = L.marker([m.lat, m.lng], { icon: icon }).addTo(municipalityMarkersLayer);
-      municipalityMarkersIndex[(m.name || '').toLowerCase()] = marker;
-      var hasUnreadNew = relevantReports.some(function(r) { return isUnreadNewReportRow(r, readSet); });
-      setMarkerBlink(marker, hasUnreadNew);
-      marker.on('click', function() {
-        markMunicipalityAsRead(m.name || '', locations);
-      });
-      if (hasProblem) {
-        var problem = relevantReports[0] || {};
-        var problemStatus = getStatusKey(problem);
-        var isOnTheWayLike = isOnTheWayRow(problem) || !!getAssignedTeamForRow(problem);
-        var statusText = isRestored ? 'Resolved' : (isNewComplianceRow(problem) ? 'New Compliance' : (isOnTheWayLike ? 'On The Way' : 'Pending'));
-        var statusColor = isRestored ? 'green' : (isOnTheWayLike ? '#f97316' : '#dc2626');
-        var slaBadge = '';
-        try {
-          var anyOverdue = visibleReports.some(function(rr){ return isOverdueRow(rr); });
-          if (anyOverdue && !isRestored) {
-            slaBadge = ' <span style="display:inline-block; margin-left:6px; background:#b91c1c; color:#fff; padding:2px 6px; border-radius:10px;">>24h Overdue</span>';
-          }
-        } catch(e){}
-        var statusLine = '<div class="map-popup-status" style="color:' + statusColor + ';">Status: ' + statusText + '</div>' + (slaBadge ? ('<div class="map-popup-note">' + slaBadge + '</div>') : '');
-        var pendingLocked = isPendingAssignmentLocked(problem);
-        var teamSel = canManage() ? buildTeamSelectLabelHtml(pendingLocked, getAssignedTeamForRow(problem)) : '';
-        var assigned = getAssignedTeamForRow(problem);
-        var manageAssign = buildPendingAssignButtonHtml(problem, isRestored);
-        var problemLocation = getReportLocationText(problem);
-        var routeHref = buildRouteHref(problem);
-        var routeLine = ((isOnTheWayRow(problem) || !!getAssignedTeamForRow(problem)) && !isRestored)
-          ? ('<button type="button" class="show-route-map map-popup-btn map-popup-btn-primary">Show Route on Map</button>' +
-            (routeHref ? '<a href="' + routeHref + '" target="_blank" rel="noopener noreferrer" class="map-popup-btn map-popup-btn-ghost open-route">Open in Google Maps</a>' : ''))
-          : '';
-        var resolveRowClass = isRestored ? 'map-popup-btn-warning' : 'map-popup-btn-success';
-        var resolveRow = canManage() ? ('<button type="button" class="resolve-toggle-row map-popup-btn ' + resolveRowClass + '">' + (isRestored ? 'Mark as Pending' : 'Mark as Resolved') + '</button>') : '';
-        var hideRow = canManage() ? '<button type="button" class="hide-pin map-popup-btn map-popup-btn-danger">Hide this pin</button>' : '';
-        marker.bindPopup(
-          '<div class="map-popup">' +
-            '<div class="map-popup-title">' + m.name + '</div>' +
-            '<div class="map-popup-sub">' + (problem.barangay || 'Location not set') + '</div>' +
-            '<div class="map-popup-issue">' + (problem.issue || 'Reported issue') + '</div>' +
-            statusLine +
-            (problemLocation ? ('<div class="map-popup-meta">Location: ' + problemLocation + '</div>') : '') +
-            (assigned ? '<div class="map-popup-meta">Assigned: ' + assigned + '</div>' : '') +
-            (isRestored ? '' : (teamSel + manageAssign)) +
-            resolveRow +
-            '<div class="map-popup-actions">' + routeLine + '<button type="button" class="view-records map-popup-btn map-popup-btn-primary">View in Records</button>' + hideRow + '</div>' +
-          '</div>'
-        );
-      marker.on('popupopen', function(e) {
-        var container = e.popup.getElement();
-        if (container && typeof L !== 'undefined' && L.DomEvent) {
-          L.DomEvent.disableClickPropagation(container);
-          L.DomEvent.disableScrollPropagation(container);
-        }
-        var teamSelectEl = container.querySelector('.team-select');
-        if (teamSelectEl) {
-          teamSelectEl.value = "";
-        }
-        if (canManage()) {
-          // Keep unlocked for adding more teams
-        } else if (isPendingAssignmentLocked(problem)) {
-          lockPendingAssignControls(container, getAssignedTeamForRow(problem));
-        }
-        if (container && container.getAttribute('data-popup-actions-bound') !== '1') {
-          container.setAttribute('data-popup-actions-bound', '1');
-          var lastFireTs = 0;
-          var onAction = async function(ev) {
-            var tgt = ev && ev.target && ev.target.closest ? ev.target.closest('button, a') : null;
-            if (!tgt || !container.contains(tgt)) return;
-            if (tgt.disabled || tgt.getAttribute('aria-disabled') === 'true') return;
-            if (!tgt.classList.contains('pending-assign') &&
-                !tgt.classList.contains('show-route-map') &&
-                !tgt.classList.contains('resolve-toggle-row') &&
-                !tgt.classList.contains('hide-pin') &&
-                !tgt.classList.contains('view-records')) {
-              return;
-            }
-            var nowTs = Date.now();
-            if (nowTs - lastFireTs < 120) return;
-            lastFireTs = nowTs;
-            ev.preventDefault();
-            ev.stopPropagation();
-
-            if (tgt.classList.contains('pending-assign')) {
-              if (!canManage() || !teamSelectEl) return;
-              var currentT = String(getAssignedTeamForRow(problem) || '').trim();
-              var newT = teamSelectEl.value || '';
-              
-              if (!newT) {
-                newT = getFirstAvailableTeam();
-                if (newT) teamSelectEl.value = newT;
-              }
-              
-              if (!newT) {
-                alert('No teams are currently available. All teams are busy with other reports.');
-                return;
-              }
-
-              // Combine existing teams with the newly selected one
-              var finalTeams = currentT;
-              if (currentT) {
-                // Check if already assigned
-                var existingTeamsArr = currentT.split(',').map(function(s){ return s.trim(); });
-                if (existingTeamsArr.indexOf(newT) === -1) {
-                  finalTeams = currentT + ', ' + newT;
-                }
-              } else {
-                finalTeams = newT;
-              }
-
-              if (problem && problem.id) {
-                try { await setReportStatusById(problem.id, 'ontheway', finalTeams); } catch (err) {
-                  console.error(err);
-                  alert(buildStatusUpdateErrorMessage(err));
-                  return;
-                }
-              }
-              lockPendingAssignControls(container, finalTeams);
-              clearRouteLine();
-              drawRouteFromAdminTo(Number(problem.latitude || m.lat), Number(problem.longitude || m.lng));
-              loadReportsFromSupabase();
-              return;
-            }
-            if (tgt.classList.contains('show-route-map')) {
-              drawRouteFromAdminTo(Number(problem.latitude || m.lat), Number(problem.longitude || m.lng));
-              return;
-            }
-            if (tgt.classList.contains('resolve-toggle-row')) {
-              if (!canManage() || !problem || !problem.id) return;
-              try {
-                var nextStatus = isResolvedRow(problem) ? 'pending' : 'resolved';
-                var teamForSave = getTeamForStatusUpdate(problem, teamSelectEl);
-                await setReportStatusById(problem.id, nextStatus, teamForSave);
-                if (String(nextStatus).toLowerCase() === 'resolved') clearRouteLine();
-                loadReportsFromSupabase();
-              } catch (err) {
-                console.error(err);
-                alert(buildStatusUpdateErrorMessage(err));
-              }
-              return;
-            }
-            if (tgt.classList.contains('hide-pin')) {
-              if (!canManage()) return;
-              hidePin(m.name || '', problem.barangay || '', problem.id || '');
-              if (window._dashboardLocations) {
-                renderMunicipalityMarkers(window._dashboardLocations);
-                renderReportMarkers(window._dashboardLocations);
-                updateSidebarBadges(window._dashboardLocations);
-                updateBarangayHighlights(window._dashboardLocations);
-                applyIssuesFilter();
-                rebuildActiveNotifications(window._dashboardLocations);
-              }
-              return;
-            }
-            if (tgt.classList.contains('view-records')) {
-              var params = new URLSearchParams();
-              params.set('location', m.name + (problem.barangay ? ' ' + problem.barangay : ''));
-              params.set('issue', problem.issue || '');
-              window.location.href = 'records.html?' + params.toString();
-            }
-          };
-          container.addEventListener('click', onAction, true);
-        }
-      });
-      }
-    });
+    // Municipality issues are already represented by report pins.
+    // Keep this layer empty to avoid duplicate visible markers.
   }
 
   function normalizeMunicipalityKey(name) {
@@ -1651,6 +1675,12 @@ document.addEventListener('DOMContentLoaded', function () {
     return municipalities.find(function(m){
       return normalizeMunicipalityKey(m.name) === k;
     }) || null;
+  }
+  function findCoverageLocationByPoint(latitude, longitude) {
+    var lookup = window.SAMELCO_COVERAGE_LOOKUP;
+    if (!lookup || typeof lookup.findLocationByPoint !== 'function') return null;
+    if (!window.SAMELCO_COVERAGE_GEOJSON) return null;
+    return lookup.findLocationByPoint(window.SAMELCO_COVERAGE_GEOJSON, latitude, longitude);
   }
   function getCentroidOfFeature(feature) {
     if (!feature || !feature.geometry) return null;
@@ -1827,9 +1857,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function normalizeReportRow(row) {
     var locationText = row.location_text || row.location || row.address || '';
+    var latitude = Number(row.latitude || row.lat || NaN);
+    var longitude = Number(row.longitude || row.lng || row.long || NaN);
+    var coverageLocation = (Number.isFinite(latitude) && Number.isFinite(longitude))
+      ? findCoverageLocationByPoint(latitude, longitude)
+      : null;
     var namedMunicipality = getMunicipalityByName(row.municipality || '');
-    var matchedMunicipality = (namedMunicipality && namedMunicipality.name) || (findMunicipalityByLocationText(locationText) || {}).name || row.municipality || 'Unknown';
-    var barangayField = row.barangay || parseBarangayFromLocationText(locationText) || '';
+    var matchedMunicipality = (coverageLocation && coverageLocation.municipality) ||
+      (namedMunicipality && namedMunicipality.name) ||
+      (findMunicipalityByLocationText(locationText) || {}).name ||
+      row.municipality ||
+      'Unknown';
+    var barangayField = (coverageLocation && coverageLocation.barangay) ||
+      row.barangay ||
+      parseBarangayFromLocationText(locationText) ||
+      '';
     var idVal = row.id || row.report_id || row._id || '';
     var uid = String(idVal || (String(row.created_at || row.createdAt || '') + '|' + matchedMunicipality + '|' + (barangayField || '') + '|' + (row.issue_type || row.issue || '')));
     return {
@@ -1841,8 +1883,8 @@ document.addEventListener('DOMContentLoaded', function () {
       fullName: row.full_name || row.name || 'Unknown reporter',
       contact: row.contact || row.phone || '',
       description: row.description || '',
-      latitude: Number(row.latitude || row.lat || NaN),
-      longitude: Number(row.longitude || row.lng || row.long || NaN),
+      latitude: latitude,
+      longitude: longitude,
       queueNumber: Number(row.queue_number || row.queueNumber || NaN),
       createdAt: row.created_at || row.createdAt || row.created || '',
       status: row.status || 'pending',
@@ -1885,14 +1927,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function markMunicipalityAsRead(mName, rows) {
     var muniName = String(mName || '');
-    if (!muniName) return;
+    var muniKey = getMunicipalityIndexKey(mName || '');
+    if (!muniKey) return;
     var list = Array.isArray(rows) ? rows : (window._dashboardLocations || []);
     var read = getReadNotifIds();
     var readSet = buildIdSet(read);
     var newlyReadIds = [];
     list.forEach(function(r) {
       if (!r) return;
-      if (String(r.name || '') !== muniName) return;
+      if (getMunicipalityIndexKey(r.name || '') !== muniKey) return;
       if (!isUnreadNewReportRow(r, readSet)) return;
       var id = String(r.id || '');
       if (id) newlyReadIds.push(id);
@@ -1912,7 +1955,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var newReadSet = buildIdSet(getReadNotifIds());
     list.forEach(function(r) {
       if (!r) return;
-      if (String(r.name || '') !== muniName) return;
+      if (getMunicipalityIndexKey(r.name || '') !== muniKey) return;
       var mk = reportMarkersById[String(r.id || '')];
       if (!mk) return;
       setMarkerBlink(mk, isUnreadNewReportRow(r, newReadSet));
@@ -1922,7 +1965,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function markBarangayAsRead(mName, bName, rows) {
     var muniName = String(mName || '');
-    if (!muniName) return;
+    var muniKey = getMunicipalityIndexKey(mName || '');
+    if (!muniKey) return;
     var brgyKey = normalizeBarangayName(bName || '');
     if (!brgyKey) return;
     var list = Array.isArray(rows) ? rows : (window._dashboardLocations || []);
@@ -1931,7 +1975,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var newlyReadIds = [];
     list.forEach(function(r) {
       if (!r) return;
-      if (String(r.name || '') !== muniName) return;
+      if (getMunicipalityIndexKey(r.name || '') !== muniKey) return;
       var brgy = resolveBarangayForReport(r) || r.barangay || '';
       if (normalizeBarangayName(brgy) !== brgyKey) return;
       if (!isUnreadNewReportRow(r, readSet)) return;
@@ -1950,7 +1994,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var newReadSet = buildIdSet(getReadNotifIds());
     list.forEach(function(r) {
       if (!r) return;
-      if (String(r.name || '') !== muniName) return;
+      if (getMunicipalityIndexKey(r.name || '') !== muniKey) return;
       var brgy = resolveBarangayForReport(r) || r.barangay || '';
       if (normalizeBarangayName(brgy) !== brgyKey) return;
       var mk = reportMarkersById[String(r.id || '')];
@@ -1960,7 +2004,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function updateMunicipalityBlinkState(mName) {
-    var key = String(mName || '').toLowerCase();
+    var key = getMunicipalityIndexKey(mName || '');
     if (!key) return;
     var mk = municipalityMarkersIndex[key];
     if (!mk) return;
@@ -1968,7 +2012,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var readSet = buildIdSet(getReadNotifIds());
     var hasUnread = rows.some(function(r) {
       if (!r) return false;
-      if (String(r.name || '').toLowerCase() !== key) return false;
+      if (getMunicipalityIndexKey(r.name || '') !== key) return false;
       if (isResolvedRow(r)) return false;
       var b = resolveBarangayForReport(r) || r.barangay || '';
       if (isPinHidden(r.name || '', b, r.id)) return false;
@@ -2183,35 +2227,17 @@ document.addEventListener('DOMContentLoaded', function () {
     reportMarkersLayer.clearLayers();
     reportMarkersIndex = {};
     reportMarkersById = {};
-    function toRadians(value) { return value * (Math.PI / 180); }
-    function distanceKm(lat1, lng1, lat2, lng2) {
-      var earthRadiusKm = 6371;
-      var dLat = toRadians(lat2 - lat1);
-      var dLng = toRadians(lng2 - lng1);
-      var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
-        Math.sin(dLng / 2) * Math.sin(dLng / 2);
-      var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return earthRadiusKm * c;
-    }
-    function findNearestMunicipality(latitude, longitude) {
-      var nearest = null, nearestDistance = Infinity;
-      municipalities.forEach(function(m){
-        var mLat = Number(m.lat), mLng = Number(m.lng);
-        if (!Number.isFinite(mLat) || !Number.isFinite(mLng)) return;
-        var d = distanceKm(latitude, longitude, mLat, mLng);
-        if (d < nearestDistance) { nearestDistance = d; nearest = m; }
-      });
-      return nearest;
-    }
     rows.forEach(function(r) {
       var rb = resolveBarangayForReport(r) || r.barangay || '';
       if (isPinHidden(r.name || '', rb, r.id)) return;
       if (isResolvedRow(r)) return;
       var lat = Number(r.latitude);
       var lng = Number(r.longitude);
-      var nearest = (Number.isFinite(lat) && Number.isFinite(lng)) ? findNearestMunicipality(lat, lng) : null;
-      var displayMunicipality = (nearest && nearest.name) ? nearest.name : (r.name || '');
+      var normalizedMunicipality = getMunicipalityByName(r.name || '') || getMunicipalityByKey(r.name || '');
+      var coverageLocation = findCoverageLocationByPoint(lat, lng);
+      var displayMunicipality = (normalizedMunicipality && normalizedMunicipality.name) ||
+        (coverageLocation && coverageLocation.municipality) ||
+        (r.name || '');
       var rb = rb;
       if (!isDbPendingRow(r) && !isResolvedRow(r) && isBarangayRestored(r.name || '', rb)) return;
       // Fallback: if no precise GPS, place near municipality center with deterministic offset per barangay
@@ -2234,7 +2260,11 @@ document.addEventListener('DOMContentLoaded', function () {
       var iconForRow = statusKey === 'ontheway' ? pendingIcon : (isNewReport ? newIcon : pendingIcon);
       var marker = L.marker([lat, lng], { icon: iconForRow }).addTo(reportMarkersLayer);
       setMarkerBlink(marker, isUnreadNewReportRow(r, readSet));
-      var idxKey = getMunicipalityIndexKey(displayMunicipality || '') + '|' + normalizeBarangayName(rb);
+      var municipalityKey = getMunicipalityIndexKey(displayMunicipality || r.name || '');
+      if (municipalityKey && !municipalityMarkersIndex[municipalityKey]) {
+        municipalityMarkersIndex[municipalityKey] = marker;
+      }
+      var idxKey = municipalityKey + '|' + normalizeBarangayName(rb);
       reportMarkersIndex[idxKey] = marker;
       reportMarkersById[String(r.id)] = marker;
       // determine restored status for this municipality name
@@ -2551,18 +2581,18 @@ document.addEventListener('DOMContentLoaded', function () {
     var byNameNew = {};
     var byNameOnTheWay = {};
     rows.forEach(function(r) {
-      var n = r.name || 'Unknown';
+      var n = getMunicipalityIndexKey(r.name || 'Unknown');
       if (isResolvedRow(r)) return;
       var bCand = resolveBarangayForReport(r) || r.barangay || '';
-      if (!isDbPendingRow(r) && isBarangayRestored(n, bCand)) return;
+      if (!isDbPendingRow(r) && isBarangayRestored(r.name || '', bCand)) return;
       if (!byNameNew[n]) byNameNew[n] = 0;
       if (!byNameOnTheWay[n]) byNameOnTheWay[n] = 0;
-      if (isNewComplianceRow(r)) byNameNew[n] += 1;
-      else if (isOnTheWayRow(r) || getAssignedTeamForRow(r)) byNameOnTheWay[n] += 1;
+      if (isOnTheWayRow(r) || getAssignedTeamForRow(r)) byNameOnTheWay[n] += 1;
+      else if (isNewComplianceRow(r)) byNameNew[n] += 1;
     });
     var totalNew = 0, totalOnTheWay = 0;
     list.querySelectorAll('.sidebar-municipality-item').forEach(function(it) {
-      var name = it.getAttribute('data-name');
+      var name = getMunicipalityIndexKey(it.getAttribute('data-name') || '');
       var newBadge = it.querySelector('.issue-badge.new');
       var pendingBadge = it.querySelector('.issue-badge.pending');
       var nCount = byNameNew[name] || 0;
@@ -2612,7 +2642,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function resolveBarangayForReport(r) {
     var mName = r.name || '';
-    var m = municipalities.find(function(mm){ return (mm.name||'').toLowerCase() === mName.toLowerCase(); });
+    var coverageLocation = findCoverageLocationByPoint(Number(r.latitude), Number(r.longitude));
+    if (coverageLocation && coverageLocation.barangay) {
+      if (!mName || normalizeMunicipalityKey(coverageLocation.municipality) === normalizeMunicipalityKey(mName)) {
+        return coverageLocation.barangay;
+      }
+    }
+    var m = getMunicipalityByName(mName) || getMunicipalityByKey(mName);
     if (!m || !Array.isArray(m.barangays)) return '';
     // Build normalized set for municipality barangays
     var normSet = {};
@@ -2640,8 +2676,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function updateBarangayHighlights(rows) {
     var list = document.getElementById('municipalities-sidebar-list');
     if (!list) return;
-    var cb = document.getElementById('issues-only-toggle');
-    var onlyIssues = cb ? !!cb.checked : true;
+    var onlyIssues = isActiveReportsSidebarFilter();
     var readSet = buildIdSet(getReadNotifIds());
     // Build queue numbers for "New" items: global and per-municipality (earliest first)
     var orderById = {};
@@ -2665,8 +2700,7 @@ document.addEventListener('DOMContentLoaded', function () {
       for (var i=0;i<sortedAll.length;i++){ orderById[sortedAll[i].id] = i+1; }
       var muniGroups = {};
       newRows.forEach(function(r){
-        var m = (r.name || 'Unknown');
-        var key = m.toLowerCase();
+        var key = getMunicipalityIndexKey(r.name || 'Unknown');
         if (!muniGroups[key]) muniGroups[key] = [];
         muniGroups[key].push(r);
       });
@@ -2682,7 +2716,7 @@ document.addEventListener('DOMContentLoaded', function () {
       });
       newRows.forEach(function(r){
         var b = resolveBarangayForReport(r) || r.barangay || '';
-        var key = (r.name || '').toLowerCase() + '|' + normalizeBarangayName(b);
+        var key = getMunicipalityIndexKey(r.name || '') + '|' + normalizeBarangayName(b);
         var q = orderById[r.id]; // use global queue for unique numbering across all municipalities
         if (q) {
           if (!orderByBrgy[key] || q < orderByBrgy[key]) orderByBrgy[key] = q;
@@ -2696,15 +2730,15 @@ document.addEventListener('DOMContentLoaded', function () {
     var onTheWayByMunicipality = {};
     var assignedByBrgyKey = {};
     rows.forEach(function(r) {
-      var m = r.name || 'Unknown';
+      var m = getMunicipalityIndexKey(r.name || 'Unknown');
       if (isResolvedRow(r)) return;
       var b = resolveBarangayForReport(r) || r.barangay || '';
-      if (!isDbPendingRow(r) && isBarangayRestored(m, b)) return;
+      if (!isDbPendingRow(r) && isBarangayRestored(r.name || '', b)) return;
       var statusKey = getStatusKey(r);
-      var statusIsNew = isNewComplianceRow(r);
-      var assignedTeam = getAssignedTeamForRow(r);
-      var statusIsOnTheWay = statusKey === 'ontheway' || !!assignedTeam;
+      var statusIsOnTheWay = isOnTheWayRow(r) || !!getAssignedTeamForRow(r);
+      var statusIsNew = !statusIsOnTheWay && isNewComplianceRow(r);
       if (!statusIsNew && !statusIsOnTheWay) return;
+      var assignedTeam = getAssignedTeamForRow(r);
       var brgyKey = (m || '').toLowerCase() + '|' + normalizeBarangayName(b);
       if (assignedTeam) {
         if (assignedByBrgyKey[brgyKey] && assignedByBrgyKey[brgyKey] !== assignedTeam) assignedByBrgyKey[brgyKey] = 'Multiple';
@@ -2720,8 +2754,9 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     list.querySelectorAll('.sidebar-municipality-item').forEach(function(it) {
       var mName = it.getAttribute('data-name');
-      var setNew = newByMunicipality[mName] || new Set();
-      var setPending = onTheWayByMunicipality[mName] || new Set();
+      var mKey = getMunicipalityIndexKey(mName || '');
+      var setNew = newByMunicipality[mKey] || new Set();
+      var setPending = onTheWayByMunicipality[mKey] || new Set();
       var anyMarked = false;
       var firstMarked = null;
       it.querySelectorAll('.barangay-item-sidebar').forEach(function(bItem) {
@@ -2741,7 +2776,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (isNewMark) {
           var badge = document.createElement('span');
           badge.className = 'issue-badge new status-badge';
-          var qKey = (mName || '').toLowerCase() + '|' + label;
+          var qKey = mKey + '|' + label;
           var qVal = orderByBrgy[qKey];
           badge.textContent = qVal ? ('New #' + qVal) : 'New';
           bItem.appendChild(badge);
@@ -2751,7 +2786,7 @@ document.addEventListener('DOMContentLoaded', function () {
           badgeP.textContent = 'On The Way';
           bItem.appendChild(badgeP);
           // Show assignment team beside Pending
-          var teamNow = assignedByBrgyKey[(mName || '').toLowerCase() + '|' + label] || '';
+          var teamNow = assignedByBrgyKey[mKey + '|' + label] || '';
           var chip = document.createElement('span');
           chip.className = 'assignment-chip';
           chip.textContent = 'Assigned: ' + (teamNow || 'Unassigned');
@@ -2843,21 +2878,20 @@ document.addEventListener('DOMContentLoaded', function () {
   function applyIssuesFilter() {
     var list = document.getElementById('municipalities-sidebar-list');
     if (!list) return;
-    var cb = document.getElementById('issues-only-toggle');
-    var onlyIssues = cb ? !!cb.checked : true;
+    var onlyIssues = isActiveReportsSidebarFilter();
     var rows = window._dashboardLocations || [];
     var byNameCounts = {};
     rows.forEach(function(r) {
-      var n = r.name || 'Unknown';
+      var n = getMunicipalityIndexKey(r.name || 'Unknown');
       if (isResolvedRow(r)) return;
       var bCand = resolveBarangayForReport(r) || r.barangay || '';
-      if (!isDbPendingRow(r) && isBarangayRestored(n, bCand)) return;
+      if (!isDbPendingRow(r) && isBarangayRestored(r.name || '', bCand)) return;
       if (!isSidebarIssueRow(r)) return;
       if (!byNameCounts[n]) byNameCounts[n] = 0;
       byNameCounts[n] += 1;
     });
     list.querySelectorAll('.sidebar-municipality-item').forEach(function(it) {
-      var name = it.getAttribute('data-name');
+      var name = getMunicipalityIndexKey(it.getAttribute('data-name') || '');
       var count = byNameCounts[name] || 0;
       var show = !onlyIssues || count > 0;
       it.style.display = show ? '' : 'none';

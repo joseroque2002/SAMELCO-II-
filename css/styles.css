@@ -828,25 +828,13 @@ body.page-about .nav {
   --marker-glow: rgba(5, 150, 105, 0.28);
   border-radius: 50% 50% 50% 0;
   transform: rotate(-45deg);
-  border: 3px solid #1a1512;
+  border: 3px solid #ffffff;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   position: relative;
 }
 
 .marker-pin-blink {
   animation: marker-pin-blink 1.1s ease-in-out infinite;
-}
-
-.marker-pin::after {
-  content: '';
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  background: #1a1512;
-  border-radius: 50%;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
 }
 
 /* Hazard marker (red for problems) */
@@ -1197,6 +1185,48 @@ body.page-about .nav {
 }
 
 .barangay-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* Map Labels */
+.map-label {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  font-weight: 900;
+  color: #000;
+  text-shadow: 
+    -2px -2px 0 #fff,  
+     2px -2px 0 #fff,
+    -2px  2px 0 #fff,
+     2px  2px 0 #fff,
+     0px 0px 6px rgba(255,255,255,1);
+  white-space: nowrap;
+  pointer-events: none !important;
+  font-family: 'Outfit', sans-serif;
+}
+
+.municipality-label {
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  z-index: 1000;
+}
+
+.barangay-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: #1e293b;
+  z-index: 999;
+}
+
+.leaflet-tooltip-pane .map-label {
+  background: transparent;
+  border: none;
+}
   margin-top: 1rem;
   padding-top: 1rem;
   border-top: 1px solid rgba(0, 0, 0, 0.1);

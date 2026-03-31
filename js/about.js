@@ -200,6 +200,49 @@ document.addEventListener('DOMContentLoaded', function () {
       iconSize: [30, 42],
       iconAnchor: [15, 42]
     });
+
+    // --- Map Labels ---
+    var municipalityLabelLayer = L.layerGroup();
+    var barangayLabelLayer = L.layerGroup();
+
+    function updateMapLabels() {
+      var zoom = map.getZoom();
+      
+      // Toggle Municipality Labels (Visible at zoom 10 and above)
+      if (zoom >= 10) {
+        if (!map.hasLayer(municipalityLabelLayer)) municipalityLabelLayer.addTo(map);
+      } else {
+        if (map.hasLayer(municipalityLabelLayer)) map.removeLayer(municipalityLabelLayer);
+      }
+
+      // Toggle Barangay Labels (Visible at zoom 12 and above)
+      if (zoom >= 12) {
+        if (!map.hasLayer(barangayLabelLayer)) barangayLabelLayer.addTo(map);
+      } else {
+        if (map.hasLayer(barangayLabelLayer)) map.removeLayer(barangayLabelLayer);
+      }
+    }
+
+    function initMunicipalityLabels() {
+      if (!window.SAMELCO_MUNICIPALITIES) return;
+      window.SAMELCO_MUNICIPALITIES.forEach(function(m) {
+        if (!m.lat || !m.lng) return;
+        L.marker([m.lat, m.lng], {
+          icon: L.divIcon({
+          className: 'map-label municipality-label',
+          html: '<span>' + m.name + '</span>',
+          iconSize: [160, 24],
+          iconAnchor: [80, 12]
+        }),
+          interactive: false,
+          pane: 'markerPane'
+        }).addTo(municipalityLabelLayer);
+      });
+    }
+
+    map.on('zoomend', updateMapLabels);
+    initMunicipalityLabels();
+
     municipalities.forEach(function(m) {
       L.marker([m.lat, m.lng], { icon: customIcon }).addTo(map);
     });
@@ -243,10 +286,31 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
               }
             });
+
+            // Add barangay label to the barangayLabelLayer
+            if (props.NAME_3) {
+              var bounds = layer.getBounds();
+              if (bounds.isValid()) {
+                var center = bounds.getCenter();
+                L.marker(center, {
+                  icon: L.divIcon({
+                  className: 'map-label barangay-label',
+                  html: '<span>' + props.NAME_3 + '</span>',
+                  iconSize: [120, 18],
+                  iconAnchor: [60, 9]
+                }),
+                  interactive: false,
+                  pane: 'markerPane'
+                }).addTo(barangayLabelLayer);
+              }
+            }
           }
         }
       }).addTo(map);
     }
+
+    // Initial update of labels
+    updateMapLabels();
 
     var group = new L.featureGroup(map._layers);
     map.fitBounds(group.getBounds().pad(0.1));

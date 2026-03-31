@@ -107,8 +107,36 @@ document.addEventListener('DOMContentLoaded', function () {
     return null;
   }
 
-  async function autoSelectMunicipalityFromGps(latitude, longitude) {
+  function findCoverageLocationFromGps(latitude, longitude) {
+    var lookup = window.SAMELCO_COVERAGE_LOOKUP;
+    if (!lookup || typeof lookup.findLocationByPoint !== 'function') return null;
+    if (!window.SAMELCO_COVERAGE_GEOJSON) return null;
+
+    var rawMatch = lookup.findLocationByPoint(window.SAMELCO_COVERAGE_GEOJSON, latitude, longitude);
+    if (!rawMatch || !rawMatch.municipality) return null;
+
+    var municipalityMatch = findBestMunicipalityMatch([rawMatch.municipality]);
+    if (!municipalityMatch) return null;
+
+    var matchedBarangay = findBestBarangayMatch(
+      [rawMatch.barangay],
+      Array.isArray(municipalityMatch.barangays) ? municipalityMatch.barangays : []
+    );
+
+    return {
+      municipality: municipalityMatch.name,
+      barangay: matchedBarangay || ''
+    };
+  }
+
+  async function autoSelectMunicipalityFromGps(latitude, longitude, coverageMatch) {
     if (!municipalityEl) return null;
+    if (coverageMatch && coverageMatch.municipality) {
+      municipalityEl.value = coverageMatch.municipality;
+      onMunicipalityChange();
+      return coverageMatch.municipality;
+    }
+
     var detected = null;
     var nearest = findNearestMunicipality(latitude, longitude);
     try {
@@ -207,7 +235,7 @@ document.addEventListener('DOMContentLoaded', function () {
     return res.json();
   }
 
-  async function autoSelectBarangayFromGps(latitude, longitude, municipalityName) {
+  async function autoSelectBarangayFromGps(latitude, longitude, municipalityName, coverageMatch) {
     if (!barangayEl || !municipalityName) return '';
     var muni = municipalityData.find(function (m) { return m.name === municipalityName; });
     var barangays = muni && Array.isArray(muni.barangays) ? muni.barangays : [];
@@ -215,6 +243,16 @@ document.addEventListener('DOMContentLoaded', function () {
       return (b && typeof b === 'object' && b.name) ? b.name : b;
     });
     if (!barangayNames.length) return '';
+
+    if (coverageMatch && coverageMatch.municipality === municipalityName && coverageMatch.barangay) {
+      var coverageBarangay = findBestBarangayMatch([coverageMatch.barangay], barangays);
+      if (coverageBarangay) {
+        barangayEl.value = coverageBarangay;
+        barangayEl.setAttribute('title', 'Auto-matched from SAMELCO coverage map');
+        return coverageBarangay;
+      }
+    }
+
     try {
       var payload = await reverseGeocode(latitude, longitude);
       var candidates = extractReverseGeocodeCandidates(payload);
@@ -279,10 +317,11 @@ document.addEventListener('DOMContentLoaded', function () {
         lngEl.value = pos.coords.longitude.toFixed(7);
         var lat = Number(latEl.value);
         var lng = Number(lngEl.value);
-        var detectedMunicipality = await autoSelectMunicipalityFromGps(lat, lng);
+        var coverageMatch = findCoverageLocationFromGps(lat, lng);
+        var detectedMunicipality = await autoSelectMunicipalityFromGps(lat, lng, coverageMatch);
         var detectedBarangay = '';
         if (detectedMunicipality) {
-          detectedBarangay = await autoSelectBarangayFromGps(lat, lng, detectedMunicipality);
+          detectedBarangay = await autoSelectBarangayFromGps(lat, lng, detectedMunicipality, coverageMatch);
         }
         var gpsText = 'GPS captured: ' + latEl.value + ', ' + lngEl.value;
         if (detectedMunicipality) {
@@ -294,6 +333,7 @@ document.addEventListener('DOMContentLoaded', function () {
           }
         }
         if (detectedBarangay) gpsText += ' | Barangay: ' + detectedBarangay;
+        if (coverageMatch && detectedMunicipality) gpsText += ' | Matched by coverage map';
         setGpsStatus(gpsText, true);
         resolve({ latitude: lat, longitude: lng, municipality: detectedMunicipality, barangay: detectedBarangay });
       }, function () {
@@ -409,6 +449,15 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
         alert('Invalid GPS coordinates captured. Please tap "Capture GPS" and submit again.');
         return;
+      }
+
+      var coverageMatch = findCoverageLocationFromGps(latitude, longitude);
+      if (coverageMatch && coverageMatch.municipality) {
+        municipalityEl.value = coverageMatch.municipality;
+        onMunicipalityChange();
+        if (coverageMatch.barangay && barangayEl) {
+          barangayEl.value = coverageMatch.barangay;
+        }
       }
 
       var selectedMunicipality = municipalityEl ? municipalityEl.value : '';

@@ -71,7 +71,7 @@
         </div>
         <div id="municipalities-panel" class="municipalities-panel">
           <h3 class="municipalities-panel-title">MUNICIPALITIES</h3>
-          <p class="municipalities-panel-subtitle">Select a map pin to open the municipality list and view barangays.</p>
+          <p class="municipalities-panel-subtitle">Only municipalities with <strong>New compliance</strong> or <strong>On the way</strong> are listed; barangays without an active report are hidden.</p>
           <div class="municipalities-controls">
             <span class="issues-summary" id="issues-summary"></span>
             <button type="button" id="toggle-audit-btn" class="records-export-btn" style="margin-left:auto;">Audit Logs</button>
@@ -169,6 +169,7 @@
 
   <script src="../js/supabase-config.js"></script>
   <script src="../js/coverage-samelco-geojson.js"></script>
+  <script src="../js/coverage-lookup.js"></script>
   <script src="../js/dashboard.js"></script>
   <script>
     // Back to Top functionality
