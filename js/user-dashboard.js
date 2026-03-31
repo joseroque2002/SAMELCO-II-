@@ -263,6 +263,26 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
+  var logoutBtn = document.getElementById('user-dashboard-logout');
+  var logoutBtnMobile = document.getElementById('user-dashboard-logout-mobile');
+  
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', function () {
+      localStorage.removeItem('userName');
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('customerSession');
+      window.location.href = 'index.html';
+    });
+  }
+  if (logoutBtnMobile) {
+    logoutBtnMobile.addEventListener('click', function () {
+      localStorage.removeItem('userName');
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('customerSession');
+      window.location.href = 'index.html';
+    });
+  }
+
   // Mobile Menu Logic
   var navBurger = document.getElementById('nav-burger');
   var navLinks = document.querySelector('.nav-links');

@@ -2943,8 +2943,11 @@ body.page-about .nav {
     display: flex;
   }
 
-  /* Hide original triggers and buttons if they exist */
-  .nav-menu-trigger, .nav-buttons {
+  /* Hide direct desktop navigation and welcome message */
+  .nav-menu-trigger, 
+  .nav-buttons, 
+  .nav-user-welcome,
+  .nav-btn:not(.nav-burger) {
     display: none !important;
   }
 
@@ -2957,8 +2960,8 @@ body.page-about .nav {
     width: 280px;
     background: #ffffff;
     flex-direction: column;
-    padding: 5rem 2rem;
-    box-shadow: -4px 0 15px rgba(0,0,0,0.1);
+    padding: 5rem 1.5rem 2rem;
+    box-shadow: -4px 0 25px rgba(0,0,0,0.15);
     z-index: 10;
   }
 
@@ -2967,16 +2970,29 @@ body.page-about .nav {
   }
 
   .nav-links .nav-link, 
-  .nav-links .nav-btn {
-    font-size: 1.1rem;
-    padding: 1rem 0;
-    border-bottom: 1px solid rgba(0,0,0,0.05);
+  .nav-links .nav-btn,
+  .nav-links .logout-trigger {
+    font-size: 1.15rem;
+    padding: 1.1rem 0;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
     width: 100%;
     color: #1a1512;
     background: transparent;
     justify-content: flex-start;
     border-radius: 0;
     box-shadow: none;
+    text-align: left;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    font-family: var(--font);
+    font-weight: 500;
+  }
+
+  .nav-links .logout-trigger {
+    color: #dc2626;
+    margin-top: auto;
+    border-bottom: none;
   }
 
   .nav-user-welcome {
@@ -5891,6 +5907,22 @@ body.page-login #signup-form .btn-primary {
   }
 }
 
+@media (max-width: 1024px) {
+  .user-hero {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .user-hero-copy {
+    min-height: auto;
+    padding: 2.5rem 2rem;
+  }
+
+  .user-hero-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 720px) {
   body.page-login #signup-form.active {
     grid-template-columns: 1fr;
@@ -6476,17 +6508,75 @@ body.page-user-dashboard .user-panel-form {
 }
 
 @media (max-width: 720px) {
-  .user-dashboard-main {
-    padding: 6.7rem 1rem 2rem;
+  .nav-inner {
+    padding: 0.5rem 0.75rem;
+    gap: 0.5rem;
+  }
+  
+  .nav-logo-icon {
+    width: 38px;
+    height: 32px;
   }
 
-  .user-hero-copy,
+  .nav-logo-title {
+    font-size: 0.95rem;
+  }
+
+  .nav-logo-text {
+    display: none;
+  }
+
+  .nav-right {
+    gap: 0.4rem;
+  }
+
+  .nav-btn {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.8rem;
+  }
+
+  .user-dashboard-main {
+    padding: 5rem 0.75rem 1.5rem;
+  }
+
+  .user-hero {
+    margin-bottom: 1rem;
+    gap: 0.75rem;
+  }
+
+  .user-hero-copy {
+     padding: 1.5rem 1.25rem;
+     border-radius: 20px;
+     text-align: center;
+     min-height: auto;
+     background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%); /* Simpler background for mobile to ensure contrast */
+   }
+  
+  .user-hero-subtitle {
+    font-size: 0.9rem;
+  }
+
+  .user-hero-stats {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .user-stat-card {
+    padding: 1.1rem;
+    border-radius: 18px;
+    text-align: center;
+  }
+
+  .user-stat-card strong {
+    font-size: 1.5rem;
+  }
+
   .user-panel,
   .user-panel-form {
-    padding: 1.2rem;
+    padding: 1.1rem;
+    border-radius: 18px;
   }
 
-  .user-hero-stats,
   .user-report-grid,
   .user-report-grid-tight,
   .user-gps-strip {
@@ -6496,5 +6586,6 @@ body.page-user-dashboard .user-panel-form {
   .user-panel-head {
     align-items: flex-start;
     flex-direction: column;
+    gap: 0.5rem;
   }
 }

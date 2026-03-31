@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   var personnelId = Number(session.id || 0);
   var logoutBtn = document.getElementById('personnel-dashboard-logout');
+  var logoutBtnMobile = document.getElementById('personnel-dashboard-logout-mobile');
   var refreshBtn = document.getElementById('personnel-dashboard-refresh');
   var emptyEl = document.getElementById('personnel-tasks-empty');
   var listEl = document.getElementById('personnel-tasks-list');
@@ -48,6 +49,26 @@ document.addEventListener('DOMContentLoaded', function () {
       localStorage.removeItem('teamSession');
       localStorage.removeItem('customerSession');
       window.location.href = 'index.html';
+    });
+  }
+  if (logoutBtnMobile) {
+    logoutBtnMobile.addEventListener('click', function () {
+      localStorage.removeItem('userName');
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('personnelSession');
+      localStorage.removeItem('teamSession');
+      localStorage.removeItem('customerSession');
+      window.location.href = 'index.html';
+    });
+  }
+
+  // Mobile Menu Logic
+  var navBurger = document.getElementById('nav-burger');
+  var navLinks = document.querySelector('.nav-links');
+  if (navBurger && navLinks) {
+    navBurger.addEventListener('click', function() {
+      navLinks.classList.toggle('is-active');
+      navBurger.classList.toggle('is-active');
     });
   }
 
