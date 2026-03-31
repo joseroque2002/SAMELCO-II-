@@ -11,92 +11,62 @@
   <style>
     .personnel-board {
       display: grid;
-      gap: 1rem;
+      gap: 1.5rem;
     }
     .personnel-task-card {
-      background: rgba(255, 255, 255, 0.92);
-      border: 1px solid rgba(148, 163, 184, 0.24);
-      border-radius: 22px;
-      padding: 1.25rem;
-      box-shadow: 0 18px 44px -28px rgba(15, 23, 42, 0.35);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     .personnel-task-card.is-urgent {
-      border-color: rgba(220, 38, 38, 0.22);
-      box-shadow: 0 20px 48px -26px rgba(220, 38, 38, 0.28);
+      border-left: 4px solid var(--primary);
     }
     .personnel-task-header {
       display: flex;
       justify-content: space-between;
       gap: 1rem;
-      align-items: flex-start;
-      margin-bottom: 0.9rem;
-    }
-    .personnel-task-kicker {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.45rem;
-      font-size: 0.78rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: #8b2a2a;
-      background: rgba(139, 42, 42, 0.08);
-      border-radius: 999px;
-      padding: 0.35rem 0.7rem;
-      margin-bottom: 0.7rem;
+      margin-bottom: 1rem;
     }
     .personnel-task-title {
-      margin: 0;
-      font-family: 'Outfit', sans-serif;
-      font-size: 1.18rem;
-      color: #0f172a;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text);
     }
     .personnel-task-status {
-      flex-shrink: 0;
+      padding: 0.25rem 0.75rem;
       border-radius: 999px;
-      padding: 0.4rem 0.8rem;
-      font-size: 0.8rem;
-      font-weight: 700;
+      font-size: 0.875rem;
+      font-weight: 600;
     }
-    .personnel-task-status.is-pending {
-      background: #fef3c7;
-      color: #b45309;
-    }
-    .personnel-task-status.is-ontheway {
-      background: #dbeafe;
-      color: #1d4ed8;
-    }
-    .personnel-task-status.is-resolved {
-      background: #dcfce7;
-      color: #15803d;
-    }
-    .personnel-task-status.is-done {
-      background: #ccfbf1;
-      color: #0f766e;
-    }
+    .personnel-task-status.is-pending { background: #fef3c7; color: #b45309; }
+    .personnel-task-status.is-ontheway { background: #dbeafe; color: #1e40af; }
+    .personnel-task-status.is-resolved { background: #dcfce7; color: #166534; }
+    .personnel-task-status.is-done { background: #ccfbf1; color: #115e59; }
+
     .personnel-task-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 0.85rem;
-      margin: 1rem 0;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
     }
     .personnel-task-meta {
-      background: #f8fafc;
-      border-radius: 16px;
-      padding: 0.9rem 1rem;
+      background: var(--bg-body);
+      padding: 1rem;
+      border-radius: var(--radius-sm);
     }
     .personnel-task-meta span {
       display: block;
-      font-size: 0.78rem;
-      color: #64748b;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-bottom: 0.3rem;
+      margin-bottom: 0.25rem;
     }
     .personnel-task-meta strong {
-      color: #0f172a;
-      font-size: 0.95rem;
-      line-height: 1.5;
+      font-size: 1rem;
+      color: var(--text);
     }
     .personnel-task-description {
       margin: 0;
@@ -192,11 +162,7 @@
     }
   </style>
 </head>
-<body class="page-user-dashboard page-personnel-dashboard">
-  <div class="bg-image" aria-hidden="true"></div>
-  <div class="noise"></div>
-  <div class="orb orb-1"></div>
-
+<body class="page-user-dashboard">
   <nav class="nav">
     <div class="nav-inner">
       <a href="index.html" class="nav-logo">
@@ -209,15 +175,6 @@
         </span>
       </a>
       <div class="nav-right">
-        <button type="button" class="nav-burger" id="nav-burger" aria-label="Toggle menu">
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
-        <div class="nav-links">
-          <a href="index.html" class="nav-link">Home</a>
-          <button type="button" class="nav-link logout-trigger" id="personnel-dashboard-logout-mobile">Logout</button>
-        </div>
         <button type="button" class="nav-btn" id="personnel-dashboard-logout">Logout</button>
       </div>
     </div>

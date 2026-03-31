@@ -28,7 +28,6 @@ document.addEventListener('DOMContentLoaded', function () {
   var normalizedTeamName = normalizeLookup(teamName);
 
   var logoutBtn = document.getElementById('team-dashboard-logout');
-  var logoutBtnMobile = document.getElementById('team-dashboard-logout-mobile');
   var refreshBtn = document.getElementById('team-dashboard-refresh');
   var addPersonnelBtn = document.getElementById('team-dashboard-add-personnel');
   var emptyEl = document.getElementById('team-missions-empty');
@@ -60,16 +59,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   if (logoutBtn) {
     logoutBtn.addEventListener('click', function () {
-      localStorage.removeItem('userName');
-      localStorage.removeItem('userRole');
-      localStorage.removeItem('teamSession');
-      localStorage.removeItem('personnelSession');
-      window.location.href = 'index.html';
-    });
-  }
-
-  if (logoutBtnMobile) {
-    logoutBtnMobile.addEventListener('click', function () {
       localStorage.removeItem('userName');
       localStorage.removeItem('userRole');
       localStorage.removeItem('teamSession');

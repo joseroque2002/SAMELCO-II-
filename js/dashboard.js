@@ -29,15 +29,8 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   var logoutBtn = document.getElementById('logout-btn');
-  var logoutBtnMobile = document.getElementById('logout-btn-mobile');
-  
   if (logoutBtn) {
     logoutBtn.addEventListener('click', function() {
-      logout();
-    });
-  }
-  if (logoutBtnMobile) {
-    logoutBtnMobile.addEventListener('click', function() {
       logout();
     });
   }
