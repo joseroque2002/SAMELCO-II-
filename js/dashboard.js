@@ -1571,7 +1571,7 @@ document.addEventListener('DOMContentLoaded', function () {
     return getStatusKey(r) === 'pending';
   }
   function getStatusKey(r) {
-    var s = String((r && r.status) || 'pending').toLowerCase();
+    var s = String((r && r.status) || 'pending').trim().toLowerCase();
     if (s === 'resolved') return 'resolved';
     if (s === 'ontheway' || s === 'on the way' || s === 'on_the_way') return 'ontheway';
     return 'pending';
