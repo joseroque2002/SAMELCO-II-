@@ -1376,7 +1376,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var eligible = rows.filter(function(r) {
       if (!r || isResolvedRow(r) || !isUrgentRow(r)) return false;
       var b = resolveBarangayForReport(r) || r.barangay || '';
-      if (isPinHidden(r.name || '', b, r.id)) return false;
+      if (isPinHidden(r.name || '', b, r.id, r)) return false;
       return true;
     }).sort(function(a, b) {
       var ta = Date.parse(a.createdAt || '') || 0;
@@ -1494,7 +1494,10 @@ document.addEventListener('DOMContentLoaded', function () {
   function getReportPinKey(reportId) {
     return 'id:' + String(reportId || '');
   }
-  function isPinHidden(mName, bName, reportId) {
+  function isPinHidden(mName, bName, reportId, row) {
+    if (row && (isOnTheWayRow(row) || !!getAssignedTeamForRow(row))) {
+      return false;
+    }
     if (reportId != null && String(reportId || '') !== '') {
       return !!hiddenPins[getReportPinKey(reportId)];
     }
@@ -1531,7 +1534,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!r || isResolvedRow(r)) return;
       var mName = r.name || '';
       var b = resolveBarangayForReport(r) || r.barangay || '';
-      if (isPinHidden(mName, b, r.id)) return;
+      if (isPinHidden(mName, b, r.id, r)) return;
       if (!isDbPendingRow(r) && isBarangayRestored(mName, b)) return;
       var t = Date.parse(r.createdAt || '');
       if (!isFinite(t)) t = -Infinity;
@@ -1571,9 +1574,10 @@ document.addEventListener('DOMContentLoaded', function () {
     return getStatusKey(r) === 'pending';
   }
   function getStatusKey(r) {
-    var s = String((r && r.status) || 'pending').trim().toLowerCase();
+    var s = String((r && r.status) || 'pending').toLowerCase();
+    s = s.replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
     if (s === 'resolved') return 'resolved';
-    if (s === 'ontheway' || s === 'on the way' || s === 'on_the_way') return 'ontheway';
+    if (s === 'ontheway' || s === 'on the way') return 'ontheway';
     return 'pending';
   }
   function isOverdueRow(r) {
@@ -2015,7 +2019,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (getMunicipalityIndexKey(r.name || '') !== key) return false;
       if (isResolvedRow(r)) return false;
       var b = resolveBarangayForReport(r) || r.barangay || '';
-      if (isPinHidden(r.name || '', b, r.id)) return false;
+      if (isPinHidden(r.name || '', b, r.id, r)) return false;
       if (!isDbPendingRow(r) && isBarangayRestored(r.name || '', b)) return false;
       return isUnreadNewReportRow(r, readSet);
     });
@@ -2061,7 +2065,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (isResolvedRow(r)) return false;
       var b = resolveBarangayForReport(r) || r.barangay || '';
       if (!isDbPendingRow(r) && isBarangayRestored(n, b)) return false;
-      if (isPinHidden(n, b, r.id)) return false;
+      if (isPinHidden(n, b, r.id, r)) return false;
       return isNewComplianceRow(r);
     });
     var readIds = getReadNotifIds();
@@ -2229,7 +2233,7 @@ document.addEventListener('DOMContentLoaded', function () {
     reportMarkersById = {};
     rows.forEach(function(r) {
       var rb = resolveBarangayForReport(r) || r.barangay || '';
-      if (isPinHidden(r.name || '', rb, r.id)) return;
+      if (isPinHidden(r.name || '', rb, r.id, r)) return;
       if (isResolvedRow(r)) return;
       var lat = Number(r.latitude);
       var lng = Number(r.longitude);
@@ -2844,7 +2848,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var m = r.name || 'Unknown';
         var b = resolveBarangayForReport(r) || r.barangay || '';
         if (!isDbPendingRow(r) && isBarangayRestored(m, b)) return;
-        if (isPinHidden(m, b, r.id)) return;
+        if (isPinHidden(m, b, r.id, r)) return;
         if (!isUnreadNewReportRow(r, readSet)) return;
         var t = Date.parse(r.createdAt || '');
         if (!isFinite(t)) t = -Infinity;
