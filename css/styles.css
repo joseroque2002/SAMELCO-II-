@@ -5916,6 +5916,28 @@ body.page-login #signup-form {
   }
 }
 
+@media (max-width: 768px) {
+  body.page-login {
+    overflow: auto;
+    min-height: auto;
+  }
+
+  body.page-login .main-container {
+    min-height: auto;
+    padding-top: 56px;
+  }
+
+  body.page-login .login-panel {
+    max-height: calc(100svh - 92px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  body.page-login .login-shell {
+    padding-bottom: 2rem;
+  }
+}
+
 body.page-login .auth-tabs {
   margin-bottom: 1rem;
   background: #f3f4f6;
@@ -6024,8 +6046,8 @@ body.page-user-dashboard .nav-logo-sub {
 .user-hero-copy {
   padding: 2rem;
   background:
-    linear-gradient(135deg, rgba(126, 34, 34, 0.98) 0%, rgba(177, 34, 34, 0.96) 54%, rgba(255, 209, 84, 0.88) 100%);
-  color: #ffffff;
+    linear-gradient(135deg, rgba(255 0 0 / 98%) 0%, 100%);
+  color: black;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -6063,7 +6085,7 @@ body.page-user-dashboard .user-hero-copy h1 {
   margin-top: 1rem;
   font-size: 1rem;
   line-height: 1.75;
-  color: rgba(255, 255, 255, 0.9);
+  color: black;
 }
 
 .user-hero-badges {
