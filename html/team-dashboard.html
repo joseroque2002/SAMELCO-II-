@@ -18,6 +18,25 @@
     .team-mission-board {
       display: grid;
       gap: 1rem;
+      max-height: 650px;
+      overflow-y: auto;
+      padding-right: 0.5rem;
+    }
+    
+    /* Custom scrollbar styling for a cleaner look */
+    .team-mission-board::-webkit-scrollbar {
+      width: 6px;
+    }
+    .team-mission-board::-webkit-scrollbar-track {
+      background: rgba(148, 163, 184, 0.1);
+      border-radius: 4px;
+    }
+    .team-mission-board::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.4);
+      border-radius: 4px;
+    }
+    .team-mission-board::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 0.6);
     }
     .team-mission-card {
       background: rgba(255, 255, 255, 0.92);
