@@ -2207,13 +2207,20 @@ document.addEventListener('DOMContentLoaded', function () {
         if (window.map) {
           if (mk) {
             var ll = mk.getLatLng();
-            window.map.setView(ll, 13);
+            window.map.setView(ll, 16);
             mk.openPopup();
           } else {
-            var muni = municipalities.find(function(mm){ return (mm.name||'').toLowerCase() === (r.name||'').toLowerCase(); });
-            if (muni && Number.isFinite(Number(muni.lat)) && Number.isFinite(Number(muni.lng))) {
-              var baseLat = Number(muni.lat), baseLng = Number(muni.lng);
-              window.map.setView([baseLat, baseLng], 12);
+            // try to zoom to exact coordinate if available
+            var rLat = Number(r.latitude);
+            var rLng = Number(r.longitude);
+            if (Number.isFinite(rLat) && Number.isFinite(rLng) && rLat !== 0 && rLng !== 0) {
+              window.map.setView([rLat, rLng], 16);
+            } else {
+              var muni = municipalities.find(function(mm){ return (mm.name||'').toLowerCase() === (r.name||'').toLowerCase(); });
+              if (muni && Number.isFinite(Number(muni.lat)) && Number.isFinite(Number(muni.lng))) {
+                var baseLat = Number(muni.lat), baseLng = Number(muni.lng);
+                window.map.setView([baseLat, baseLng], 12);
+              }
             }
           }
         }
@@ -2245,7 +2252,7 @@ document.addEventListener('DOMContentLoaded', function () {
       var rb = rb;
       if (!isDbPendingRow(r) && !isResolvedRow(r) && isBarangayRestored(r.name || '', rb)) return;
       // Fallback: if no precise GPS, place near municipality center with deterministic offset per barangay
-      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      if (!Number.isFinite(lat) || !Number.isFinite(lng) || (lat === 0 && lng === 0)) {
         var brgyForPos = rb || r.barangay || '';
         if (!brgyForPos) {
           var locText = getReportLocationText(r);
@@ -2261,9 +2268,10 @@ document.addEventListener('DOMContentLoaded', function () {
       var statusKey = getStatusKey(r);
       var assignedTeam = getAssignedTeamForRow(r);
       var isNewReport = isNewComplianceRow(r);
-      var iconForRow = statusKey === 'ontheway' ? pendingIcon : (isNewReport ? newIcon : pendingIcon);
+      var isBlinking = isUnreadNewReportRow(r, readSet);
+      var basePinClass = statusKey === 'ontheway' ? 'marker-pin-pending' : (isNewReport ? 'marker-pin-new' : 'marker-pin-pending');
+      var iconForRow = createMarkerIcon(basePinClass + (isBlinking ? ' marker-pin-blink' : ''));
       var marker = L.marker([lat, lng], { icon: iconForRow }).addTo(reportMarkersLayer);
-      setMarkerBlink(marker, isUnreadNewReportRow(r, readSet));
       var municipalityKey = getMunicipalityIndexKey(displayMunicipality || r.name || '');
       if (municipalityKey && !municipalityMarkersIndex[municipalityKey]) {
         municipalityMarkersIndex[municipalityKey] = marker;

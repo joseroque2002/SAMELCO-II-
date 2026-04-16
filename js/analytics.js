@@ -142,6 +142,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   var elRecentList = document.getElementById('analytics-recent-list');
   var elRecentEmpty = document.getElementById('analytics-recent-empty');
+  var elExport = document.getElementById('analytics-export-btn');
 
   var allReports = [];
   var perDayChart, topMuniChart, topBarangayChart;
@@ -463,7 +464,7 @@ document.addEventListener('DOMContentLoaded', function () {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        animation: { duration: 1500, easing: 'easeOutQuart' },
+        animation: false,
         plugins: {
           legend: { display: false },
           tooltip: {
@@ -538,7 +539,7 @@ document.addEventListener('DOMContentLoaded', function () {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        animation: { duration: 1800, easing: 'easeOutElastic' },
+        animation: false,
         plugins: {
           legend: { display: false },
           tooltip: {
@@ -612,7 +613,7 @@ document.addEventListener('DOMContentLoaded', function () {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        animation: { duration: 2000, easing: 'easeOutCubic' },
+        animation: false,
         plugins: {
           legend: { display: false },
           tooltip: {
@@ -642,6 +643,171 @@ document.addEventListener('DOMContentLoaded', function () {
         }
       }
     });
+  }
+
+  function getCanvasImage(canvasId) {
+    try {
+      if (canvasId === 'reports-per-day-chart' && perDayChart && typeof perDayChart.toBase64Image === 'function') {
+        return perDayChart.toBase64Image();
+      }
+      if (canvasId === 'top-municipalities-chart' && topMuniChart && typeof topMuniChart.toBase64Image === 'function') {
+        return topMuniChart.toBase64Image();
+      }
+      if (canvasId === 'top-barangays-chart' && topBarangayChart && typeof topBarangayChart.toBase64Image === 'function') {
+        return topBarangayChart.toBase64Image();
+      }
+      var canvas = document.getElementById(canvasId);
+      if (!canvas || typeof canvas.toDataURL !== 'function') return '';
+      return canvas.toDataURL('image/png');
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function buildAnalyticsPdfHtml(filtered) {
+    var now = new Date();
+    var rangeVal = elRange ? String(elRange.value || '30d') : '30d';
+    var muniVal = elMuni ? String(elMuni.value || 'all') : 'all';
+    var brgyVal = elBarangay ? String(elBarangay.value || 'all') : 'all';
+    var statusVal = elStatus ? String(elStatus.value || 'all') : 'all';
+    var meta = [];
+    meta.push('Generated on ' + now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }));
+    if (rangeVal === '7d') meta.push('Last 7 days');
+    else if (rangeVal === '30d') meta.push('Last 30 days');
+    else if (rangeVal === '90d') meta.push('Last 90 days');
+    else meta.push('All time');
+    if (muniVal !== 'all') meta.push('Municipality: ' + muniVal);
+    if (brgyVal !== 'all') meta.push('Barangay: ' + brgyVal);
+    if (statusVal === 'active') meta.push('Status: Active');
+    if (statusVal === 'resolved') meta.push('Status: Resolved');
+    meta.push('Records: ' + filtered.length);
+
+    var reportTitle = 'Analytics Snapshot Report';
+    var chartImages = [
+      { title: 'Reports Per Day', src: getCanvasImage('reports-per-day-chart') },
+      { title: 'Top Municipalities', src: getCanvasImage('top-municipalities-chart') },
+      { title: 'Top Barangays', src: getCanvasImage('top-barangays-chart') }
+    ];
+
+    var muniCounts = countByKey(filtered, function(r){ return r.municipality || 'Unknown'; });
+    var muniTop = topEntries(muniCounts, 8);
+    var brgyCounts = countByKey(filtered, function(r){ return (r.barangay || 'Not specified') + ' • ' + (r.municipality || 'Unknown'); });
+    var brgyTop = topEntries(brgyCounts, 8);
+
+    var muniTable = [];
+    var nowMs = Date.now();
+    var byMuni = {};
+    filtered.forEach(function(r) {
+      var key = r.municipality || 'Unknown';
+      if (!byMuni[key]) byMuni[key] = { reports: 0, active: 0, resolved: 0, overdue: 0 };
+      byMuni[key].reports++;
+      var res = isResolvedRow(r);
+      if (res) byMuni[key].resolved++; else byMuni[key].active++;
+      if (!res && r.created_at) {
+        var dt = new Date(r.created_at);
+        if (!isNaN(dt.getTime()) && nowMs - dt.getTime() > 24 * 60 * 60 * 1000) byMuni[key].overdue++;
+      }
+    });
+    Object.keys(byMuni).sort(function(a,b){ return byMuni[b].reports - byMuni[a].reports; }).slice(0, 12).forEach(function(key) {
+      muniTable.push({ muni: key, stats: byMuni[key] });
+    });
+
+    var recentRows = filtered.slice().sort(function(a,b){ return new Date(b.created_at) - new Date(a.created_at); }).slice(0,10);
+
+    var css = '<style>' +
+      'body{font-family:Arial,Helvetica,sans-serif;color:#222;margin:0;padding:24px;background:#f8f8f8;}' +
+      '.page{max-width:900px;margin:0 auto;background:#fff;padding:24px;border-radius:10px;box-shadow:0 0 18px rgba(0,0,0,.08);}' +
+      '.pdf-header{display:flex;align-items:center;gap:14px;border-bottom:1px solid #e0e0e0;padding-bottom:14px;margin-bottom:18px;}' +
+      '.pdf-header img{width:64px;height:auto;border-radius:10px;object-fit:contain;background:#fff;padding:8px;box-shadow:0 0 8px rgba(0,0,0,.08);}' +
+      '.pdf-header-text{display:flex;flex-direction:column;}' +
+      '.pdf-header-text .title{font-size:16px;font-weight:800;color:#8b2a2a;margin:0;}' +
+      '.pdf-header-text .subtitle{font-size:12px;color:#555;margin:2px 0 0;}' +
+      '.pdf-header-text .subtle{font-size:11px;color:#777;margin-top:4px;}' +
+      '.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;}' +
+      '.header h1{font-size:24px;margin:0;color:#8b2a2a;}' +
+      '.meta{font-size:13px;color:#444;line-height:1.6;margin:12px 0 24px;}' +
+      '.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px;}' +
+      '.summary-card{background:#fafafa;border:1px solid #e6e6e6;border-radius:10px;padding:14px;}' +
+      '.summary-card h3{margin:0 0 8px;font-size:12px;color:#666;text-transform:uppercase;letter-spacing:0.05em;}' +
+      '.summary-card .value{font-size:20px;font-weight:700;color:#111;}' +
+      '.section{margin-bottom:24px;}' +
+      '.section h2{font-size:18px;margin:0 0 14px;color:#333;}' +
+      '.chart{margin-bottom:18px;}' +
+      '.chart img{width:100%;height:auto;border:1px solid #ddd;border-radius:8px;background:#fff;}' +
+      'table{width:100%;border-collapse:collapse;margin-bottom:18px;}' +
+      'th,td{border:1px solid #ddd;padding:9px 10px;text-align:left;font-size:12px;}' +
+      'th{background:#f3f3f3;color:#333;}' +
+      '.list-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;}' +
+      '.list-box{background:#fafafa;border:1px solid #e6e6e6;border-radius:10px;padding:12px;}' +
+      '.list-box h3{margin:0 0 10px;font-size:14px;color:#444;}' +
+      '.list-item{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;font-size:12px;}' +
+      '.list-item:last-child{border-bottom:none;}' +
+      '@page{margin:0;}' +
+      '@media print{body{padding:20mm;}}' +
+      '.pdf-footer{margin-top:30px;padding-top:10px;border-top:1px solid #e0e0e0;font-size:11px;color:#777;text-align:center;}' +
+      '</style>';
+
+    var summaryHtml = '<div class="summary-grid">' +
+      '<div class="summary-card"><h3>Active Issues</h3><div class="value">' + (elActive ? elActive.textContent : '0') + '</div></div>' +
+      '<div class="summary-card"><h3>Resolved</h3><div class="value">' + (elResolved ? elResolved.textContent : '0') + '</div></div>' +
+      '<div class="summary-card"><h3>Total Reports</h3><div class="value">' + (elTotal ? elTotal.textContent : '0') + '</div></div>' +
+      '<div class="summary-card"><h3>>24h Active</h3><div class="value">' + (elOverdue ? elOverdue.textContent : '0') + '</div></div>' +
+      '</div>';
+
+    var chartHtml = chartImages.map(function(chart) {
+      if (!chart.src) return '';
+      return '<div class="chart"><h2>' + chart.title + '</h2><img src="' + chart.src + '" alt="' + chart.title + '"></div>';
+    }).join('');
+
+    var muniTopHtml = '<div class="list-box"><h3>Top Municipalities</h3>' +
+      muniTop.map(function(item){ return '<div class="list-item"><span>' + item.key + '</span><span>' + item.value + '</span></div>'; }).join('') +
+      '</div>';
+    var brgyTopHtml = '<div class="list-box"><h3>Top Barangays</h3>' +
+      brgyTop.map(function(item){ return '<div class="list-item"><span>' + item.key + '</span><span>' + item.value + '</span></div>'; }).join('') +
+      '</div>';
+
+    var muniTableHtml = '<table><thead><tr><th>Municipality</th><th>Reports</th><th>Active</th><th>Resolved</th><th>>24h</th></tr></thead><tbody>' +
+      muniTable.map(function(row){ return '<tr><td>' + row.muni + '</td><td>' + row.stats.reports + '</td><td>' + row.stats.active + '</td><td>' + row.stats.resolved + '</td><td>' + row.stats.overdue + '</td></tr>'; }).join('') +
+      '</tbody></table>';
+
+    var recentHtml = '<table><thead><tr><th>Municipality</th><th>Barangay</th><th>Issue</th><th>Status</th><th>Date</th></tr></thead><tbody>' +
+      recentRows.map(function(r){ return '<tr><td>' + (r.municipality || '') + '</td><td>' + (r.barangay || '') + '</td><td>' + (r.issue_type || '') + '</td><td>' + (isResolvedRow(r) ? 'Resolved' : 'Active') + '</td><td>' + (r.created_at ? new Date(r.created_at).toLocaleDateString('en-US') : '') + '</td></tr>'; }).join('') +
+      '</tbody></table>';
+
+    var now = new Date();
+    var dateString = now.toLocaleDateString('en-US') + ', ' + now.toLocaleTimeString('en-US');
+
+    return '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + reportTitle + '</title>' + css + '</head><body>' +
+      '<div class="page">' +
+      '<div class="pdf-header">' +
+      '<img src="../assets/images/logo.png" alt="SAMELCO II logo">' +
+      '<div class="pdf-header-text">' +
+      '<strong class="title">SAMAR II ELECTRIC COOPERATIVE, INC.</strong>' +
+      '<span class="subtitle">Paranas, Samar - Consumer Service Department</span>' +
+      '<span class="subtle">Analytics Snapshot Report</span>' +
+      '</div>' +
+      '</div>' +
+      '<div class="header"><div><h1>' + reportTitle + '</h1><div class="meta">' + meta.join(' • ') + '</div></div></div>' +
+      summaryHtml +
+      '<div class="section"><h2>Filters</h2><div class="meta">' + meta.join(' • ') + '</div></div>' +
+      chartHtml +
+      '<div class="section"><h2>Top Insights</h2><div class="list-grid">' + muniTopHtml + brgyTopHtml + '</div></div>' +
+      '<div class="section"><h2>Municipality Performance</h2>' + muniTableHtml + '</div>' +
+      '<div class="section"><h2>Recent Activity</h2>' + recentHtml + '</div>' +
+      '<div class="pdf-footer">Generated on: ' + dateString + ' | Analytics Snapshot Report</div>' +
+      '</div></body></html>';
+  }
+
+  function exportAnalyticsPdf() {
+    var filtered = applyFilters(allReports);
+    var html = buildAnalyticsPdfHtml(filtered);
+    var win = window.open('', '_blank');
+    if (!win) return;
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(function(){ try { win.print(); } catch(_){} try { win.close(); } catch(_){} }, 300);
   }
 
   function updateAll() {
@@ -683,6 +849,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (elStatus) elStatus.value = 'all';
       updateAll();
     });
+    if (elExport) elExport.addEventListener('click', function() { updateAll(); exportAnalyticsPdf(); });
   }
 
   async function fetchAllReports(cfg) {

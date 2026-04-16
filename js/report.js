@@ -317,6 +317,20 @@ document.addEventListener('DOMContentLoaded', function () {
         lngEl.value = pos.coords.longitude.toFixed(7);
         var lat = Number(latEl.value);
         var lng = Number(lngEl.value);
+        
+        try {
+          var payload = await reverseGeocode(lat, lng);
+          if (payload && payload.display_name && streetEl && !streetEl.value) {
+            // Provide the exact address where the user is
+            streetEl.value = payload.display_name;
+            streetEl.classList.add('dirty');
+            streetEl.dispatchEvent(new Event('input', { bubbles: true }));
+            streetEl.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        } catch (e) {
+          console.warn('Unable to reverse geocode exact location:', e);
+        }
+
         var coverageMatch = findCoverageLocationFromGps(lat, lng);
         var detectedMunicipality = await autoSelectMunicipalityFromGps(lat, lng, coverageMatch);
         var detectedBarangay = '';
@@ -507,6 +521,40 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
           window.dispatchEvent(new CustomEvent('samelco:report-submitted', { detail: latestSummary }));
         } catch (e) {}
+
+        // Send EmailJS auto-reply
+        try {
+          var userEmail = '';
+          var userName = row.full_name || '';
+          var sessionStr = localStorage.getItem('customerSession');
+          if (sessionStr) {
+            var sessionObj = JSON.parse(sessionStr);
+            if (sessionObj.email) userEmail = sessionObj.email;
+          }
+          
+          if (userEmail && typeof emailjs !== 'undefined') {
+            emailjs.send(
+              'service_asz4dsz', 
+              'template_68dcpph', 
+              {
+                to_email: userEmail,
+                to_name: userName,
+                email: userEmail,
+                name: userName,
+                issue_type: row.issue_type,
+                location: row.location_text,
+                queue_number: Number.isFinite(finalQueue) ? finalQueue : 'N/A'
+              }
+            ).then(function() {
+              console.log('Auto-reply email sent successfully.');
+            }).catch(function(error) {
+              console.error('Failed to send auto-reply email:', error);
+            });
+          }
+        } catch (e) {
+          console.error('Error triggering EmailJS:', e);
+        }
+
         if (Number.isFinite(finalQueue)) {
           alert('Report submitted successfully. Your queue number is #' + finalQueue + '.');
         } else {

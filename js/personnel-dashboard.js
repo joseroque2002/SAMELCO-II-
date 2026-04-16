@@ -257,11 +257,72 @@ document.addEventListener('DOMContentLoaded', function () {
         triggerButton.disabled = true;
         triggerButton.textContent = 'Saving...';
       }
+
+      // Fetch the report's author info before updating
+      var userEmail = '';
+      var userName = '';
+      var locationText = '';
+      var issueType = '';
+      var queueNum = '';
+      try {
+        var res = await fetch(cfg.url + '/rest/v1/' + cfg.reportsTable + '?id=eq.' + encodeURIComponent(reportId) + '&select=full_name,location_text,issue_type,queue_number', {
+          headers: { apikey: cfg.anonKey, Authorization: 'Bearer ' + cfg.anonKey }
+        });
+        if (res.ok) {
+          var data = await res.json();
+          if (data && data.length) {
+            userName = data[0].full_name || '';
+            locationText = data[0].location_text || '';
+            issueType = data[0].issue_type || '';
+            queueNum = data[0].queue_number || '';
+            
+            if (userName) {
+              var userRes = await fetch(cfg.url + '/rest/v1/customer_users?full_name=eq.' + encodeURIComponent(userName) + '&select=email', {
+                headers: { apikey: cfg.anonKey, Authorization: 'Bearer ' + cfg.anonKey }
+              });
+              if (userRes.ok) {
+                var userData = await userRes.json();
+                if (userData && userData.length) {
+                  userEmail = userData[0].email;
+                }
+              }
+            }
+          }
+        }
+      } catch(e) { console.error('Failed to fetch report details for email', e); }
+
       await callSupabaseRpc('mark_personnel_assignment_done', {
         p_report_id: Number(reportId),
         p_personnel_id: Number(personnelId)
       });
       showToast('Task marked as done.');
+      
+      // Trigger RESTORED email if EmailJS is available
+      if (typeof emailjs !== 'undefined') {
+        try {
+          emailjs.send(
+            'service_asz4dsz', 
+            'template_7s9y3pb', 
+            {
+              to_email: userEmail || 'support@samelcodos.ph',
+              to_name: userName || 'Valued Customer',
+              email: userEmail || 'support@samelcodos.ph',
+              name: userName || 'Valued Customer',
+              title: issueType || 'Reported Issue',
+              issue_type: issueType || 'Reported Issue',
+              location: locationText || 'Your Location',
+              queue_number: queueNum || 'N/A'
+            }
+          ).then(function() {
+            console.log('Restored email sent successfully on Mark as Done.');
+          }).catch(function(error) {
+            console.error('Failed to send restored email:', error);
+          });
+        } catch (e) {
+          console.error('Error triggering EmailJS:', e);
+        }
+      }
+
       await loadTasks(false);
     } catch (err) {
       alert(buildPersonnelDashboardErrorMessage(err, 'Failed to mark task as done'));

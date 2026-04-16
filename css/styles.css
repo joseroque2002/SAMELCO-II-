@@ -1436,10 +1436,6 @@ body.page-about .nav {
   background: transparent;
   border: none;
 }
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
-}
 
 .barangay-list ul {
   list-style: none;
@@ -3440,7 +3436,7 @@ body.page-about .nav {
 
 .btn-primary {
   color: var(--bg);
-  background: linear-gradient(135deg, var(--accent) 0%, #c96a3d 100%);
+  background: linear-gradient(135deg, #ff0000 0%, #ff8181 100%);
   box-shadow: 0 4px 20px var(--accent-glow);
 }
 
@@ -4906,6 +4902,7 @@ body.page-analytics .analytics-recent-body {
   font-size: 1.25rem;
   margin-bottom: 1.5rem;
   background: linear-gradient(135deg, #1a1512 0%, #4a3f35 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   display: inline-block;

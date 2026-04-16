@@ -4,7 +4,7 @@ Choose one of these options:
 
 ## Option 1: Open the file directly (quickest)
 Double-click **html/index.html** in File Explorer, or right-click it → **Open with** → your browser (Chrome, Edge, Firefox).  
-The page will open at something like `file:///C:/Users/ACER/samelco2/html/index.html`.
+The page will open at something like `file:///C:/Users/ACER/samelco2/html/index.html``https://samelco-ii-fc66.vercel.app/html/index.html`.
 
 ## Option 2: Use Python (if installed)
 Open a terminal in this folder and run:

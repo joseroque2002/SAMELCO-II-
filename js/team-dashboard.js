@@ -521,12 +521,72 @@ document.addEventListener('DOMContentLoaded', function () {
   async function setReportStatusById(reportId, nextStatus, assignedTeam) {
     var normalizedStatus = normalizeStatus(nextStatus);
     var teamString = String(assignedTeam || '').trim();
+    
+    // Fetch the report's author info before updating
+    var userEmail = '';
+    var userName = '';
+    var locationText = '';
+    var issueType = '';
+    var queueNum = '';
+    try {
+      var res = await fetch(cfg.url + '/rest/v1/' + cfg.reportsTable + '?id=eq.' + encodeURIComponent(reportId) + '&select=full_name,location_text,issue_type,queue_number', {
+        headers: { apikey: cfg.anonKey, Authorization: 'Bearer ' + cfg.anonKey }
+      });
+      if (res.ok) {
+        var data = await res.json();
+        if (data && data.length) {
+          userName = data[0].full_name || '';
+          locationText = data[0].location_text || '';
+          issueType = data[0].issue_type || '';
+          queueNum = data[0].queue_number || '';
+          
+          // Try to find customer user if we have a name
+          if (userName) {
+            var userRes = await fetch(cfg.url + '/rest/v1/customer_users?full_name=eq.' + encodeURIComponent(userName) + '&select=email', {
+              headers: { apikey: cfg.anonKey, Authorization: 'Bearer ' + cfg.anonKey }
+            });
+            if (userRes.ok) {
+              var userData = await userRes.json();
+              if (userData && userData.length) {
+                userEmail = userData[0].email;
+              }
+            }
+          }
+        }
+      }
+    } catch(e) { console.error('Failed to fetch report details for email', e); }
+
     try {
       await callSupabaseRpc('set_report_status', {
         p_report_id: Number(reportId),
         p_status: normalizedStatus,
         p_team_name: teamString || null
       });
+      
+      // Trigger RESTORED email if status changed to resolved
+      if (normalizedStatus === 'resolved' && typeof emailjs !== 'undefined') {
+        try {
+          emailjs.send(
+            'service_asz4dsz', 
+            'template_7s9y3pb', 
+            {
+              to_email: userEmail || 'support@samelcodos.ph',
+              to_name: userName || 'Valued Customer',
+              email: userEmail || 'support@samelcodos.ph',
+              name: userName || 'Valued Customer',
+              issue_type: issueType || 'Reported Issue',
+              location: locationText || 'Your Location',
+              queue_number: queueNum || 'N/A'
+            }
+          ).then(function() {
+            console.log('Restored email sent successfully.');
+          }).catch(function(error) {
+            console.error('Failed to send restored email:', error);
+          });
+        } catch (e) {
+          console.error('Error triggering EmailJS:', e);
+        }
+      }
       return;
     } catch (err) {
       if (!/404|set_report_status|not find the function/i.test(err && err.message ? err.message : '')) {
@@ -539,7 +599,7 @@ document.addEventListener('DOMContentLoaded', function () {
       resolved_at: normalizedStatus === 'resolved' ? new Date().toISOString() : null,
       assigned_team: teamString || null
     };
-    var res = await fetch(cfg.url + '/rest/v1/' + cfg.reportsTable + '?id=eq.' + encodeURIComponent(reportId), {
+    var patchRes = await fetch(cfg.url + '/rest/v1/' + cfg.reportsTable + '?id=eq.' + encodeURIComponent(reportId), {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -549,10 +609,35 @@ document.addEventListener('DOMContentLoaded', function () {
       },
       body: JSON.stringify(patchBody)
     });
-    if (!res.ok) {
+    if (!patchRes.ok) {
       var responseText = '';
-      try { responseText = (await res.text()) || ''; } catch (e) {}
-      throw new Error(responseText || ('Failed to update report status (HTTP ' + res.status + ')'));
+      try { responseText = (await patchRes.text()) || ''; } catch (e) {}
+      throw new Error(responseText || ('Failed to update report status (HTTP ' + patchRes.status + ')'));
+    }
+    
+    // Trigger RESTORED email if status changed to resolved (fallback route)
+    if (normalizedStatus === 'resolved' && typeof emailjs !== 'undefined') {
+      try {
+        emailjs.send(
+          'service_asz4dsz', 
+          'template_7s9y3pb', 
+          {
+            to_email: userEmail || 'support@samelcodos.ph',
+            to_name: userName || 'Valued Customer',
+            email: userEmail || 'support@samelcodos.ph',
+            name: userName || 'Valued Customer',
+            issue_type: issueType || 'Reported Issue',
+            location: locationText || 'Your Location',
+            queue_number: queueNum || 'N/A'
+          }
+        ).then(function() {
+          console.log('Restored email sent successfully.');
+        }).catch(function(error) {
+          console.error('Failed to send restored email:', error);
+        });
+      } catch (e) {
+        console.error('Error triggering EmailJS:', e);
+      }
     }
   }
 

@@ -8,6 +8,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;1,500&family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;1,500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <script>
+    (function(){
+      emailjs.init("y5UiKHqZSQAJr8n9C");
+    })();
+  </script>
 </head>
 <body class="page-contact">
   <div class="bg-image" aria-hidden="true"></div>
@@ -129,7 +135,7 @@
         <div class="contact-card contact-map-card">
           <div class="contact-map-header">
             <span class="contact-map-title">Location</span>
-            <span class="contact-map-sub">Samar, Philippines</span>
+            <span class="contact-map-sub">26 Asian Highway, Paranas, 6703 Samar, Philippines</span>
           </div>
           <div class="contact-map-embed">
             <iframe
@@ -147,16 +153,18 @@
 
         <aside class="contact-card contact-form-card">
           <h3 class="contact-form-title">Message Us</h3>
-          <div class="contact-form-grid">
-            <input type="text" id="msg-name" placeholder="Your name">
-            <input type="text" id="msg-account" placeholder="Account number">
-            <input type="email" id="msg-email" placeholder="Your email">
-            <textarea id="msg-body" placeholder="Your message"></textarea>
-          </div>
-          <div class="contact-form-actions">
-            <button type="button" class="btn btn-primary" id="send-email-btn">Send Email</button>
-            <button type="button" class="contact-action" id="copy-message-btn">Copy Message</button>
-          </div>
+          <form id="contact-form">
+            <div class="contact-form-grid">
+              <input type="text" name="name" id="msg-name" placeholder="Your name" required>
+              <input type="text" name="account" id="msg-account" placeholder="Account number" required>
+              <input type="email" name="email" id="msg-email" placeholder="Your email" required>
+              <textarea name="message" id="msg-body" placeholder="Your message" required></textarea>
+            </div>
+            <div class="contact-form-actions">
+              <button type="submit" class="btn btn-primary">Send Email</button>
+              <button type="button" class="contact-action" id="copy-message-btn">Copy Message</button>
+            </div>
+          </form>
         </aside>
       </div>
     </div>
@@ -196,7 +204,7 @@
         <div class="footer-contact-info">
           <div class="footer-contact-item">
             <span class="footer-contact-icon">📍</span>
-            <span>Paranas, Samar, Philippines</span>
+            <span>26 Asian Highway, Paranas, 6703 Samar, Philippines</span>
           </div>
           <div class="footer-contact-item">
             <span class="footer-contact-icon">📞</span>
@@ -222,6 +230,21 @@
 
   <script src="../js/contact.js"></script>
   <script>
+    document.getElementById('contact-form').addEventListener('submit', function(event) { 
+        event.preventDefault(); 
+
+        emailjs.sendForm( 
+            'service_asz4dsz', 
+            'template_88rfhxn', 
+            this 
+        ) 
+        .then(function() { 
+            alert('Message sent successfully!'); 
+        }, function(error) { 
+            alert('Failed to send message: ' + error.text); 
+        }); 
+    });
+
     // Back to Top functionality
     const backToTopBtn = document.getElementById('back-to-top');
     window.addEventListener('scroll', () => {
